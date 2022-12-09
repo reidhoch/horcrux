@@ -1,0 +1,38 @@
+name: Coverage report
+on:
+  pull_request:
+    types: [opened]
+    branches:
+      - develop
+permissions:
+  contents: read
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9"]
+        poetry-version: ["1.2.2"]
+    steps:
+      - uses: actions/checkout@v3.1.0
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v2.2.0
+        with:
+          poetry-version: ${{ matrix.poetry-version }}
+      - name: Set up Poetry virtual environment
+        run: poetry env use python${{ matrix.python-version }}
+      - name: Install project dependencies
+        run: poetry install
+      - name: Run tests with Poetry
+        run: |
+          poetry run pytest --junit-xml=junit/test-results-${{ matrix.python-version }}.xml --cov=shamir --cov-branch --cov-report=xml -n auto
+      - name: Code Coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: coverage.xml
+          flags: unittests
+          token: ${{ secrets.CODECOV_TOKEN }}
