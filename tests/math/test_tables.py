@@ -1,3 +1,4 @@
+# flake8: noqa
 from shamir.math import EXP_TABLE, LOG_TABLE
 
 

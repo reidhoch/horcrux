@@ -1,18 +1,19 @@
+# flake8: noqa
 from shamir.math import add, mul
 from shamir.utils import Polynomial, interpolate
 
 
 def test_random() -> None:
     poly: Polynomial = Polynomial(intercept=42, degree=2)
-    assert poly.coefficients[0] == 42  # noqa: SCS108
+    assert poly.coefficients[0] == 42
 
 
 def test_evaluate() -> None:
     poly: Polynomial = Polynomial(intercept=42, degree=1)
-    assert poly.evaluate(0) == 42  # noqa: SCS108
+    assert poly.evaluate(0) == 42
     out = poly.evaluate(1)
     exp = add(42, mul(1, poly.coefficients[1]))
-    assert out == exp  # noqa: SCS108
+    assert out == exp
 
 
 def test_interpolate() -> None:
@@ -21,4 +22,4 @@ def test_interpolate() -> None:
         x: bytearray = bytearray([1, 2, 3])
         y: bytearray = bytearray([poly.evaluate(1), poly.evaluate(2), poly.evaluate(3)])
         out: int = interpolate(x, y, 0)
-        assert out == i  # noqa: SCS108
+        assert out == i
