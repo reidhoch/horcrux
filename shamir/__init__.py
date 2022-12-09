@@ -1,12 +1,12 @@
+"""Python implementation of Shamir's Secret Sharing."""
 from secrets import randbelow
-from typing import List
 
 from shamir.utils import Polynomial, interpolate
 
 __all__ = ["combine", "split"]
 
 
-def combine(parts: List[bytearray]) -> bytearray:
+def combine(parts: list[bytearray]) -> bytearray:
     """Combine is used to reconstruct a secret once a threshold is reached."""
     if len(parts) < 2:
         raise ValueError("Less than two parts cannot be used to reconstruct the secret")
@@ -38,10 +38,11 @@ def combine(parts: List[bytearray]) -> bytearray:
     return secret
 
 
-def split(secret: bytes, parts: int, threshold: int) -> List[bytearray]:
+def split(secret: bytes, parts: int, threshold: int) -> list[bytearray]:
     """
-    Split an arbitrarily long secret into a number of parts, a threshold of which
-    are required to reconstruct the secret.
+    Split an arbitrarily long secret into a number of parts.
+
+    A threshold of which are required to reconstruct the secret.
     """
     if parts < threshold:
         raise ValueError("Parts cannot be less than threshold")
@@ -52,17 +53,25 @@ def split(secret: bytes, parts: int, threshold: int) -> List[bytearray]:
     if len(secret) == 0:
         raise ValueError("Cannot split an empty secret")
 
-    x_coords: List[int] = [randbelow(255) for _ in range(1, 256)]
+    # Generate a random list of x coordinates.
+    x_coords: list[int] = [randbelow(255) for _ in range(1, 256)]
 
-    output: List[bytearray] = [bytearray() for _ in range(parts)]
-    for i in range(len(output)):
-        output[i] = bytearray(len(secret) + 1)
-        output[i][len(secret)] = x_coords[i] + 1
+    # Allocate output array
+    output: list[bytearray] = [bytearray() for _ in range(parts)]
+    for idx in range(len(output)):
+        output[idx] = bytearray(len(secret) + 1)
+        output[idx][len(secret)] = x_coords[idx] + 1
 
-    for i, val in enumerate(secret):
+    for idx, val in enumerate(secret):
+        # Construct a random polynomial for each byte of the secret.
+        # Since we're using a field size of 256 we can only represent
+        # a single byte as the intercept of the polynomial, so we have
+        # to use a new polynomial for each byte.
         poly: Polynomial = Polynomial(degree=(threshold - 1), intercept=val)
-        for j in range(parts):
-            x: int = x_coords[j] + 1
+
+        # Generate (x, y) pairs
+        for i in range(parts):
+            x: int = x_coords[i] + 1
             y: int = poly.evaluate(x)
-            output[j][i] = y
+            output[i][idx] = y
     return output

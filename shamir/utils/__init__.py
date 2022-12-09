@@ -1,3 +1,4 @@
+"""Utilities."""
 from secrets import token_bytes
 
 from shamir.math import add, div, mul
@@ -11,13 +12,16 @@ class Polynomial:
     def __init__(self, degree: int, intercept: int) -> None:
         """Random polynomial of given degree with the provided intercept value."""
         self.coefficients: bytearray = bytearray(degree + 1)
+        # Ensure the intercept is set
         self.coefficients[0] = intercept
+        # Assign random coefficients to the polynomial.
         self.coefficients[1:] = token_bytes(degree)
 
     def evaluate(self, x: int) -> int:
         """Return the value of the polynomial for the given x."""
         if x == 0:
             return self.coefficients[0]
+        # Compute the polynomial using Horner's method.
         degree: int = len(self.coefficients) - 1
         out: int = self.coefficients[degree]
         for i in range(degree - 1, -1, -1):
@@ -27,17 +31,18 @@ class Polynomial:
 
 
 def interpolate(x_s: bytearray, y_s: bytearray, x: int) -> int:
-    """Take N sample points and return the value of a given x using Lagrange interpolation."""
+    """Take N sample points and return the value of a given x using Lagrange interpolation."""  # noqa: E501
     limit: int = len(x_s)
     result: int = 0
     for i in range(limit):
         basis: int = 1
         for j in range(limit):
-            if i != j:
-                num: int = add(x, x_s[j])
-                den: int = add(x_s[i], x_s[j])
-                term: int = div(num, den)
-                basis = mul(basis, term)
+            if i == j:
+                continue
+            num: int = add(x, x_s[j])
+            den: int = add(x_s[i], x_s[j])
+            term: int = div(num, den)
+            basis = mul(basis, term)
         group: int = mul(y_s[i], basis)
         result = add(result, group)
     return result

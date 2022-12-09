@@ -1,5 +1,5 @@
+# flake8: noqa
 from itertools import permutations
-from typing import List
 
 import pytest
 
@@ -7,18 +7,20 @@ from shamir import combine, split
 
 
 def test_combine() -> None:
-    secret: bytes = "test".encode('utf-8')
+    secret: bytes = b"test"
     parts: int = 5
     threshold: int = 3
-    out: List[bytearray] = split(secret, parts, threshold)
+    out: list[bytearray] = split(secret, parts, threshold)
     for perm in permutations(out, threshold):
         recombined: bytearray = combine(list(perm))
-        assert recombined == secret  # noqa: SCS108
+        assert recombined == secret
 
 
 def test_combine_invalid() -> None:
-    parts: List[bytearray] = []
-    with pytest.raises(ValueError, match="Less than two parts cannot be used to reconstruct the secret"):  # noqa: E501
+    parts: list[bytearray] = []
+    with pytest.raises(
+        ValueError, match="Less than two parts cannot be used to reconstruct the secret"
+    ):
         combine(parts)
     parts = [bytearray("foo", "ascii"), bytearray("ba", "ascii")]
     with pytest.raises(ValueError, match="All parts must be the same length"):
@@ -33,7 +35,7 @@ def test_combine_invalid() -> None:
 
 def test_split() -> None:
     secret: bytearray = bytearray("test", "ascii")
-    out: List[bytearray] = split(secret, 5, 3)
+    out: list[bytearray] = split(secret, 5, 3)
     assert len(out) == 5  # noqa: SCS108
     first_part_len: int = len(out[0])
     for part in out:
