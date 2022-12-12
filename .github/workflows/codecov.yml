@@ -2,8 +2,6 @@ name: Coverage report
 on:
   pull_request:
     types: [opened]
-    branches:
-      - develop
 permissions:
   contents: read
 jobs:
