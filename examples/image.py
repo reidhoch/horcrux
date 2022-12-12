@@ -2,10 +2,9 @@ from base64 import b64decode, b64encode
 from pathlib import Path
 
 import rich
+import typer
 
 import shamir
-
-import typer
 
 app: typer.Typer = typer.Typer()
 
