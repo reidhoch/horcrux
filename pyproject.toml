@@ -1,9 +1,11 @@
+[tool.bandit]
+exclude_dirs = [".venv", "tests"]
+
 [tool.black]
 line-length = 88
 target-version = ['py39']
 include = '\.pyi?$'
 exclude = '''
-
 (
   /(
       \.eggs         # exclude a few common directories in the
@@ -52,6 +54,7 @@ python = "^3.9"
 cryptography = "^38.0.4"
 
 [tool.poetry.dev-dependencies]
+bandit = "^1.7.4"
 black = "22.12.0"
 flake8 = "^6.0"
 flake8-2020 = "^1.7.0"
