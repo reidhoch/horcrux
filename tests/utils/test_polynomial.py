@@ -11,8 +11,8 @@ def test_random() -> None:
 def test_evaluate() -> None:
     poly: Polynomial = Polynomial(intercept=42, degree=1)
     assert poly.evaluate(0) == 42
-    out = poly.evaluate(1)
-    exp = add(42, mul(1, poly.coefficients[1]))
+    out: int = poly.evaluate(1)
+    exp: int = add(42, mul(1, poly.coefficients[1]))
     assert out == exp
 
 

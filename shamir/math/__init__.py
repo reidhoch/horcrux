@@ -6,7 +6,7 @@ from cryptography.hazmat.primitives import constant_time
 
 from .tables import EXP_TABLE, LOG_TABLE
 
-__all__ = ["add", "div", "mul", "EXP_TABLE", "LOG_TABLE"]
+__all__: list[str] = ["add", "div", "mul", "EXP_TABLE", "LOG_TABLE"]
 ZERO: Final[bytes] = b"\x00"
 
 
