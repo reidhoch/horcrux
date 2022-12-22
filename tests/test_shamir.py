@@ -1,6 +1,7 @@
 # flake8: noqa
 # type: ignore
 from itertools import permutations
+from random import Random
 
 import pytest
 
@@ -11,7 +12,7 @@ def test_combine() -> None:
     secret: bytes = b"test"
     parts: int = 5
     threshold: int = 3
-    out: list[bytearray] = split(secret, parts, threshold)
+    out: list[bytearray] = split(secret, parts, threshold, rng=Random(12345))
     for perm in permutations(out, threshold):
         recombined: bytearray = combine(list(perm))
         assert recombined == secret
@@ -36,7 +37,7 @@ def test_combine_invalid() -> None:
 
 def test_split() -> None:
     secret: bytearray = bytearray("test", "ascii")
-    out: list[bytearray] = split(secret, 5, 3)
+    out: list[bytearray] = split(secret, 5, 3, rng=Random(54321))
     assert len(out) == 5  # noqa: SCS108
     first_part_len: int = len(out[0])
     for part in out:
