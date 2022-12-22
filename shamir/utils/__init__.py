@@ -16,6 +16,8 @@ class Polynomial:
         rng: Random = SystemRandom(),  # noqa: B008
     ) -> None:
         """Random polynomial of given degree with the provided intercept value."""
+        if not rng:
+            raise ValueError("RNG not initialized")
         self.coefficients: bytearray = bytearray(degree + 1)
         # Ensure the intercept is set
         self.coefficients[0] = intercept

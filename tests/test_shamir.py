@@ -1,4 +1,5 @@
 # flake8: noqa
+# type: ignore
 from itertools import permutations
 
 import pytest
@@ -44,6 +45,8 @@ def test_split() -> None:
 
 def test_split_invalid() -> None:
     secret: bytearray = bytearray("test", "ascii")
+    with pytest.raises(ValueError, match="RNG not initialized"):
+        split(secret, 5, 3, None)
     with pytest.raises(ValueError, match="Parts cannot be less than threshold"):
         split(secret, 2, 3)
     with pytest.raises(ValueError, match="Parts or Threshold cannot exceed 255"):

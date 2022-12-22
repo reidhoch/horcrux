@@ -57,6 +57,8 @@ def split(
         raise ValueError("Threshold must be at least 2")
     if len(secret) == 0:
         raise ValueError("Cannot split an empty secret")
+    if not rng:
+        raise ValueError("RNG not initialized")
 
     # Generate a random list of x coordinates.
     x_coords: list[int] = [rng.randrange(0, 255) for _ in range(1, 256)]
