@@ -1,6 +1,14 @@
 # flake8: noqa
+# type: ignore
+import pytest
+
 from shamir.math import add, mul
 from shamir.utils import Polynomial, interpolate
+
+
+def test_invalid_rng() -> None:
+    with pytest.raises(ValueError, match="RNG not initialized"):
+        Polynomial(intercept=42, degree=2, rng=None)
 
 
 def test_random() -> None:
