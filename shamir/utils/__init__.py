@@ -1,21 +1,26 @@
 """Utilities."""
-from secrets import token_bytes
+from random import Random, SystemRandom
 
 from shamir.math import add, div, mul
 
-__all__ = ["Polynomial", "interpolate"]
+__all__: list[str] = ["Polynomial", "interpolate"]
 
 
 class Polynomial:
     """A Polynomial of arbitrary degree."""
 
-    def __init__(self, degree: int, intercept: int) -> None:
+    def __init__(
+        self,
+        degree: int,
+        intercept: int,
+        rng: Random = SystemRandom(),  # noqa: B008
+    ) -> None:
         """Random polynomial of given degree with the provided intercept value."""
         self.coefficients: bytearray = bytearray(degree + 1)
         # Ensure the intercept is set
         self.coefficients[0] = intercept
         # Assign random coefficients to the polynomial.
-        self.coefficients[1:] = token_bytes(degree)
+        self.coefficients[1:] = rng.randbytes(degree)
 
     def evaluate(self, x: int) -> int:
         """Return the value of the polynomial for the given x."""

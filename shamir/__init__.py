@@ -1,9 +1,9 @@
 """Python implementation of Shamir's Secret Sharing."""
-from secrets import randbelow
+from random import Random, SystemRandom
 
 from shamir.utils import Polynomial, interpolate
 
-__all__ = ["combine", "split"]
+__all__: list[str] = ["combine", "split"]
 
 
 def combine(parts: list[bytearray]) -> bytearray:
@@ -23,11 +23,11 @@ def combine(parts: list[bytearray]) -> bytearray:
     check_map: dict[int, bool] = {}
 
     for i, part in enumerate(parts):
-        samp = part[first_part_len - 1]
-        if samp in check_map:
+        sample: int = part[first_part_len - 1]
+        if sample in check_map:
             raise ValueError("Duplicate part detected")
-        check_map[samp] = True
-        x_s[i] = samp
+        check_map[sample] = True
+        x_s[i] = sample
 
     for idx, _ in enumerate(secret):
         for i, part in enumerate(parts):
@@ -38,7 +38,12 @@ def combine(parts: list[bytearray]) -> bytearray:
     return secret
 
 
-def split(secret: bytes, parts: int, threshold: int) -> list[bytearray]:
+def split(
+    secret: bytes,
+    parts: int,
+    threshold: int,
+    rng: Random = SystemRandom(),  # noqa: B008
+) -> list[bytearray]:
     """
     Split an arbitrarily long secret into a number of parts.
 
@@ -54,7 +59,7 @@ def split(secret: bytes, parts: int, threshold: int) -> list[bytearray]:
         raise ValueError("Cannot split an empty secret")
 
     # Generate a random list of x coordinates.
-    x_coords: list[int] = [randbelow(255) for _ in range(1, 256)]
+    x_coords: list[int] = [rng.randrange(0, 255) for _ in range(1, 256)]
 
     # Allocate output array
     output: list[bytearray] = [bytearray() for _ in range(parts)]
@@ -67,7 +72,7 @@ def split(secret: bytes, parts: int, threshold: int) -> list[bytearray]:
         # Since we're using a field size of 256 we can only represent
         # a single byte as the intercept of the polynomial, so we have
         # to use a new polynomial for each byte.
-        poly: Polynomial = Polynomial(degree=(threshold - 1), intercept=val)
+        poly: Polynomial = Polynomial(degree=(threshold - 1), intercept=val, rng=rng)
 
         # Generate (x, y) pairs
         for i in range(parts):
