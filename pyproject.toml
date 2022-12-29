@@ -19,8 +19,6 @@ exclude = '''
     | build
     | dist
   )/
-  | foo.py           # also separately exclude a file named foo.py in
-                     # the root of the project
 )
 '''
 
@@ -93,6 +91,7 @@ pytest-cov = "^4.0"
 pytest-profiling = "^1.7"
 pytest-xdist = {extras = ["psutil"], version = "^3.0"}
 shed = "^0.10"
+tox = "^4.0"
 typer = {extras = ["all"], version = "^0.7.0"}
 
 [build-system]

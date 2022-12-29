@@ -19,7 +19,7 @@ def password() -> None:
             break
     print(f"Generated password: {password}")  # noqa: T201
     parts: list[bytearray] = split(password.encode("ascii"), 5, 3)
-    print("Generating shares.")  # noqa: T201
+    print("Generating base64 encoded shares.")  # noqa: T201
     for idx, part in enumerate(parts):
         print(f"{idx}:\t{b64encode(part).decode('ascii')}")  # noqa: T201
     shuffle(parts)
