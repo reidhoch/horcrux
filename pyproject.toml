@@ -61,7 +61,7 @@ version = "0.1.2"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-cryptography = "^38.0.4"
+cryptography = ">=38.0.4,<40.0.0"
 
 [tool.poetry.dev-dependencies]
 bandit = "^1.7.4"
