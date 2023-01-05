@@ -1,13 +1,17 @@
 """Math utility functions in GF(2^8)."""
+import hmac
 from sys import byteorder
 from typing import Final
-
-from cryptography.hazmat.primitives import constant_time
 
 from .tables import EXP_TABLE, LOG_TABLE
 
 __all__: list[str] = ["add", "div", "mul", "EXP_TABLE", "LOG_TABLE"]
 ZERO: Final[bytes] = b"\x00"
+
+
+def bytes_eq(a: bytes, b: bytes) -> bool:
+    """Test byte equality in constant-time."""
+    return hmac.compare_digest(a, b)
 
 
 def add(a: int, b: int) -> int:
@@ -18,9 +22,9 @@ def add(a: int, b: int) -> int:
 def div(a: int, b: int) -> int:
     """Divides two numbers in GF(2^8)."""
     # Ensure that we return zero if a is zero, but don't leak timing info.
-    if constant_time.bytes_eq(a.to_bytes(1, byteorder), ZERO):
+    if bytes_eq(a.to_bytes(1, byteorder), ZERO):
         return 0
-    if constant_time.bytes_eq(b.to_bytes(1, byteorder), ZERO):
+    if bytes_eq(b.to_bytes(1, byteorder), ZERO):
         raise ZeroDivisionError
 
     log_a: int = LOG_TABLE[a]
@@ -33,9 +37,8 @@ def div(a: int, b: int) -> int:
 def mul(a: int, b: int) -> int:
     """Multiply two numbers in GF(2^8)."""
     # Ensure that we return zero if a or b is zero, but don't leak timing info.
-    if constant_time.bytes_eq(a.to_bytes(1, byteorder), ZERO) or constant_time.bytes_eq(
-        b.to_bytes(1, byteorder),
-        ZERO,
+    if bytes_eq(a.to_bytes(1, byteorder), ZERO) or bytes_eq(
+        b.to_bytes(1, byteorder), ZERO
     ):
         return 0
     log_a: int = LOG_TABLE[a]
