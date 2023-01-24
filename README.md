@@ -1,5 +1,5 @@
 # Horcrux
-A Python implemntation of Shamir's Secret Sharing, based of Hashicorp's implementation for Vault.
+A Python implementation of Shamir's Secret Sharing, based of Hashicorp's implementation for Vault.
 
 ## Shamir's Secret Sharing
 Shamir's Secret Sharing in an efficient algorithm for distributing private information. A secret is transformed into _shares_ from which the secret can be reassembled once a _threshold_ number are combined.
