@@ -32,8 +32,8 @@ class Polynomial:
         degree: int = len(self.coefficients) - 1
         out: int = self.coefficients[degree]
         for i in range(degree - 1, -1, -1):
-            coeff: int = self.coefficients[i]
-            out = add(mul(out, x), coeff)
+            coefficient: int = self.coefficients[i]
+            out = add(mul(out, x), coefficient)
         return out
 
 
