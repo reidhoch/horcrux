@@ -1,3 +1,4 @@
+[![codecov](https://codecov.io/gh/reidhoch/horcrux/branch/develop/graph/badge.svg?token=7DYAQIUMS2)](https://codecov.io/gh/reidhoch/horcrux)
 # Horcrux
 A Python implementation of Shamir's Secret Sharing, based of Hashicorp's implementation for Vault.
 
