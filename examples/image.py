@@ -12,10 +12,10 @@ app: typer.Typer = typer.Typer()
 @app.command()
 def split(filename: str) -> None:
     """Split the file into five shares."""
-    with open(Path(filename), "rb") as image:
+    with Path(filename).open("rb") as image:
         shares: list[bytearray] = shamir.split(image.read(), 5, 3)
         for idx, share in enumerate(shares):
-            with open(f"{idx}.txt", "wb") as out:
+            with Path(f"{idx}.txt").open("wb") as out:
                 rich.print(f"Writing share #{idx} as {idx}.txt")
                 out.write(b64encode(share))
 
@@ -25,10 +25,10 @@ def combine(shares: list[str], filename: str) -> None:
     """Combine three or more shares into $FILENAME."""
     parts: list[bytearray] = []
     for share in shares:
-        with open(Path(share)) as share_input:
+        with Path(share).open() as share_input:
             decoded: bytearray = bytearray(b64decode(share_input.read()))
             parts.append(decoded)
-    with open(Path(filename), "wb") as output:  # noqa: SCS109
+    with Path(filename).open("wb") as output:
         rich.print(f"Combing shares into {filename}")
         output.write(shamir.combine(parts))
 
