@@ -553,19 +553,18 @@ flake8 = ">=3.0.0"
 
 [[package]]
 name = "flake8-implicit-str-concat"
-version = "0.3.0"
+version = "0.4.0"
 description = "Flake8 plugin to encourage correct string literal concatenation."
 category = "dev"
 optional = false
 python-versions = "~=3.7"
 files = [
-    {file = "flake8_implicit_str_concat-0.3.0-py2.py3-none-any.whl", hash = "sha256:a89ebc50567790fb7b83e032ed4014ae0db70e35d89e269c3323967135023600"},
-    {file = "flake8_implicit_str_concat-0.3.0.tar.gz", hash = "sha256:c0e6ae227e46238e4c87844091f8072892caeccd3bb266576a7d449eadbf53a0"},
+    {file = "flake8_implicit_str_concat-0.4.0-py3-none-any.whl", hash = "sha256:b91805a3e0ff30ae2890830548478af25c79a4a579ec402a6ba3538043dff60c"},
+    {file = "flake8_implicit_str_concat-0.4.0.tar.gz", hash = "sha256:b6acf233afee943dc1802ef4bc242a19f0419fac9943739e235d3f2aaf616361"},
 ]
 
 [package.dependencies]
-attrs = ">=19.3"
-more-itertools = ">=8.0.2,<9"
+more-itertools = {version = ">=8.0.2", markers = "python_version <= \"3.9\""}
 
 [[package]]
 name = "flake8-import-order"
@@ -1692,4 +1691,4 @@ testing = ["coverage (>=6.2)", "coverage-enable-subprocess (>=1)", "flaky (>=3.7
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "37e43778be42b1a9e948a11bdbdc2c26a2feed247e1a4c89c99fa60a7a661e4f"
+content-hash = "b0096bdf401ec25ca147bd7cf94248673b8a14b4124f32ea223181ebcdc7f749"
