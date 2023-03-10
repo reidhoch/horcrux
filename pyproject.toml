@@ -63,7 +63,7 @@ version = "1.0.1"
 python = "^3.9"
 
 [tool.poetry.dev-dependencies]
-bandit = "^1.7.4"
+bandit = "^1.7.5"
 black = "23.1.0"
 flake8 = "^6.0"
 flake8-2020 = "^1.7.0"
