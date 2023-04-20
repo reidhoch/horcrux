@@ -1483,14 +1483,14 @@ testing-integration = ["build[virtualenv]", "filelock (>=3.4.0)", "jaraco.envs (
 
 [[package]]
 name = "shed"
-version = "2023.3.1"
+version = "2023.4.1"
 description = "`shed` canonicalises Python code."
 category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "shed-2023.3.1-py3-none-any.whl", hash = "sha256:f67aea50adb6c86f14d45794f8176b559b06172176d0545f3650391185f9ee67"},
-    {file = "shed-2023.3.1.tar.gz", hash = "sha256:807d130cda5e84532f5f5e4ddadca5746d7b8f1888f26d4729ea469ad75933c5"},
+    {file = "shed-2023.4.1-py3-none-any.whl", hash = "sha256:e4789ff5c760cccb1b308fc892730b2e2f874631d9e4b754d4ce1a00dbb3e263"},
+    {file = "shed-2023.4.1.tar.gz", hash = "sha256:228eee0f4b4baa74f8e40a490af202ea0b1304ea408a4614a7925532077debc8"},
 ]
 
 [package.dependencies]
@@ -1692,4 +1692,4 @@ test = ["covdefaults (>=2.2.2)", "coverage (>=7.1)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "08d5067f952ec025d651f77fd12f30e08e00c39e83d1f581c70830dff3ad3245"
+content-hash = "a5d8ece843918abd1dac3b86a6bfda6d976d89623d9366237c67130316c365ee"
