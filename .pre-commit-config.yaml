@@ -37,11 +37,11 @@ repos:
     hooks:
       - id: isort
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: 'v0.0.261'
+    rev: 'v0.0.262'
     hooks:
       - id: ruff
   - repo: https://github.com/Zac-HD/shed
-    rev: 2023.3.1
+    rev: 2023.4.1
     hooks:
       - id: shed
         args: [--refactor, --py39-plus]
