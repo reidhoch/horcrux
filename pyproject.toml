@@ -99,7 +99,7 @@ isort = "^5.12"
 mypy = "^1.4"
 pep8-naming = "^0.13.3"
 pre-commit = "^3.3"
-pytest = "^7.3"
+pytest = "^7.4"
 pytest-cov = "^4.1"
 pytest-profiling = "^1.7"
 pytest-xdist = {extras = ["psutil"], version = "^3.3"}
