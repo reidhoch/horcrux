@@ -103,7 +103,7 @@ pytest = "^7.4"
 pytest-cov = "^4.1"
 pytest-profiling = "^1.7"
 pytest-xdist = {extras = ["psutil"], version = "^3.3"}
-ruff = "^0.1.1"
+ruff = "^0.1.2"
 shed = "^2023.6"
 tox = "^4.11"
 typer = {extras = ["all"], version = "^0.9.0"}
