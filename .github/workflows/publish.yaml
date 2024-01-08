@@ -24,7 +24,7 @@ jobs:
       - name: Install Poetry
         uses: abatilo/actions-poetry@a5643c67b5fcc9ac5eddb395c7f61b1b66d86034 # v2.4.0
         with:
-          poetry-version: "1.6.1"
+          poetry-version: "1.7.1"
       - name: Build and publish
         run: |
           poetry config pypi-token.pypi ${{ secrets.PYPI_TOKEN }}
