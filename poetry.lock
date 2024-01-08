@@ -679,17 +679,17 @@ flake8-plugin-utils = ">=1.0,<2.0"
 
 [[package]]
 name = "flake8-secure-coding-standard"
-version = "1.4.0"
+version = "1.4.1"
 description = "Flake8 plugin adding some checks to make Python code adhere to more secure coding standard"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "flake8-secure-coding-standard-1.4.0.tar.gz", hash = "sha256:a0393cd3ed5bd44a79735e15d1845e9416cda5b3fe39941984e2d9714916d779"},
-    {file = "flake8_secure_coding_standard-1.4.0-py2.py3-none-any.whl", hash = "sha256:0c7222b8c92f85dc38014a53d6a1a8dab4267363b128afe480cbc2d1c29b2df0"},
+    {file = "flake8-secure-coding-standard-1.4.1.tar.gz", hash = "sha256:75590fba3af46028a908bad7c11e789b6c1bf78805be54f92229d3c490009bf2"},
+    {file = "flake8_secure_coding_standard-1.4.1-py2.py3-none-any.whl", hash = "sha256:65b06d6935e19c22ec457b2f9c805f083969bd33cefdbcdceee8d41abb761695"},
 ]
 
 [package.dependencies]
-flake8 = ">=3.7,<7.0"
+flake8 = ">=3.7,<8.0"
 
 [package.extras]
 test = ["mock", "pytest", "pytest-cov", "pytest-mock"]
@@ -1629,4 +1629,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "5b813293078b59526097ef009e212688b2d94a4a18b9dfc03492e36eb9f8f8ab"
+content-hash = "e1a61ef5fb81802199a4474ee9fcafb811045b39d9360eaffe77b3d7bc5e6376"
