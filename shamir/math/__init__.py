@@ -1,4 +1,5 @@
 """Math utility functions in GF(2^8)."""
+
 import hmac
 from sys import byteorder
 from typing import Final

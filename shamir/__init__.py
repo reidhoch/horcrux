@@ -1,4 +1,5 @@
 """Python implementation of Shamir's Secret Sharing."""
+
 from random import Random, SystemRandom
 
 from shamir.utils import Polynomial, interpolate
