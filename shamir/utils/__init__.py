@@ -1,4 +1,5 @@
 """Utilities."""
+
 from random import Random, SystemRandom
 
 from shamir.math import add, div, mul
