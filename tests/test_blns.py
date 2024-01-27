@@ -10,9 +10,9 @@ from urllib.request import Request, urlopen
 
 from shamir import combine, split
 
-BLNS: Final[
-    str
-] = "https://raw.githubusercontent.com/minimaxir/big-list-of-naughty-strings/master/blns.base64.json"
+BLNS: Final[str] = (
+    "https://raw.githubusercontent.com/minimaxir/big-list-of-naughty-strings/master/blns.base64.json"
+)
 RNG: Final[Random] = Random(12345)
 
 
