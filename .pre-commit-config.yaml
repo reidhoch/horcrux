@@ -37,7 +37,7 @@ repos:
     hooks:
       - id: isort
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.1.14"
+    rev: "v0.2.0"
     hooks:
       - id: ruff
         args: [--no-cache]
@@ -48,6 +48,6 @@ repos:
         args: [--refactor, --py39-plus]
         types_or: [python, pyi, markdown, rst]
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.18.1
+    rev: v8.18.2
     hooks:
       - id: gitleaks
