@@ -1,4 +1,3 @@
-# flake8: noqa
 # type: ignore
 
 from base64 import b64decode
