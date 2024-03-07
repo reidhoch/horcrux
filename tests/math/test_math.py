@@ -1,4 +1,3 @@
-# flake8: noqa
 import pytest
 
 from shamir.math import add, div, mul

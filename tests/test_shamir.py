@@ -1,4 +1,3 @@
-# flake8: noqa
 # type: ignore
 from itertools import permutations
 from random import Random
