@@ -31,8 +31,8 @@ jobs:
         run: poetry env use python${{ matrix.python-version }}
       - name: Install project dependencies
         run: poetry install
-      - name: Run black
-        run: poetry run black --check shamir tests
+      - name: Run Ruff format
+        run: poetry run ruff format --no-cache --check shamir tests
       - name: Run Ruff
         run: poetry run ruff check --no-cache shamir tests
       - name: Run tests with Poetry

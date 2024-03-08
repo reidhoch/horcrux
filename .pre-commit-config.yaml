@@ -20,29 +20,16 @@ repos:
       - id: end-of-file-fixer
       - id: fix-byte-order-marker
       - id: trailing-whitespace
-  - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 24.2.0
-    hooks:
-      - id: black
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.8.0
     hooks:
       - id: mypy
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: "v0.3.1"
     hooks:
       - id: ruff
         args: [--no-cache]
-  - repo: https://github.com/Zac-HD/shed
-    rev: 2024.1.1
-    hooks:
-      - id: shed
-        args: [--refactor, --py39-plus]
-        types_or: [python, pyi, markdown, rst]
+      - id: ruff-format
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.18.2
     hooks:
