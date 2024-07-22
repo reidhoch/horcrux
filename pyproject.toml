@@ -38,7 +38,7 @@ python = "^3.9"
 [tool.poetry.dev-dependencies]
 mypy = "^1.10"
 pre-commit = "^3.7"
-pytest = "^8.2"
+pytest = "^8.3"
 pytest-cov = "^5.0"
 pytest-profiling = "^1.7"
 pytest-xdist = { extras = ["psutil"], version = "^3.6" }
