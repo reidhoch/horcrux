@@ -711,13 +711,13 @@ testing = ["build[virtualenv] (>=1.2.1)", "covdefaults (>=2.3)", "detect-test-po
 
 [[package]]
 name = "typer"
-version = "0.12.3"
+version = "0.12.4"
 description = "Typer, build great CLIs. Easy to code. Based on Python type hints."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "typer-0.12.3-py3-none-any.whl", hash = "sha256:070d7ca53f785acbccba8e7d28b08dcd88f79f1fbda035ade0aecec71ca5c914"},
-    {file = "typer-0.12.3.tar.gz", hash = "sha256:49e73131481d804288ef62598d97a1ceef3058905aa536a1134f90891ba35482"},
+    {file = "typer-0.12.4-py3-none-any.whl", hash = "sha256:819aa03699f438397e876aa12b0d63766864ecba1b579092cc9fe35d886e34b6"},
+    {file = "typer-0.12.4.tar.gz", hash = "sha256:c9c1613ed6a166162705b3347b8d10b661ccc5d95692654d0fb628118f2c34e6"},
 ]
 
 [package.dependencies]
@@ -760,4 +760,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "ed428e75f063bb6221fac1d5f76dd53f5ecd7253eb7d5cc73df5f5fdfe7ef0ef"
+content-hash = "d5ee44bc2c62cf2dabf8cca0ed0a8a2d29e550c5e9179e6338c1dc309f251fab"
