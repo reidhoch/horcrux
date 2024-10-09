@@ -39,7 +39,7 @@ jobs:
         run: |
           poetry run pytest --junit-xml=junit/test-results-${{ matrix.python-version }}.xml --cov=shamir --cov-branch --cov-report=xml -n auto
       - name: Upload pytest test results
-        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
+        uses: actions/upload-artifact@84480863f228bb9747b473957fcc9e309aa96097 # v4.4.2
         with:
           name: test-results-${{ matrix.python-version }}
           path: junit/test-results-${{ matrix.python-version }}.xml
