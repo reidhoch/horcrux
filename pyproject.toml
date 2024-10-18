@@ -42,7 +42,7 @@ pre-commit = "^4.0"
 pytest = "^8.3"
 pytest-cov = "^5.0"
 pytest-xdist = { extras = ["psutil"], version = "^3.6" }
-ruff = "^0.6.9"
+ruff = "^0.7.0"
 tox = "^4.23"
 typer = { extras = ["all"], version = "^0.12.5" }
 
