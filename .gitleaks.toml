@@ -1,0 +1,58 @@
+# GitLeaks configuration for Horcrux project
+# This file configures gitleaks to ignore test files and example data
+
+title = "gitleaks config for horcrux"
+
+# Global allowlist for test files and directories
+[allowlist]
+description = "Allowlist for test files containing mock secrets and example data"
+paths = [
+    '''TEST_SUITE_DOCUMENTATION.md''',
+    '''tests/.*''',
+    '''examples/.*''',
+    '''.*test.*\.py''',
+    '''.*_test\.py''',
+    '''test_.*\.py''',
+]
+
+# Additional allowlist for specific patterns that might appear in tests
+regexes = [
+    '''sk-1234567890abcdef1234567890abcdef''',  # Mock API key from tests
+    '''MyVerySecurePassword123!@#''',  # Test password
+    '''Nuclear launch codes: 1234-5678-9012''',  # Test secret
+    '''production-deployment-key-v2024''',  # Test deployment key
+    '''super-secret-jwt-key-2024''',  # Test JWT secret
+    '''sk_test_123456789''',  # Test Stripe key
+    '''SG\.1234567890''',  # Test SendGrid key
+    '''postgresql://.*password.*''',  # Test database URLs
+    '''abandon ability able about above absent.*''',  # Test seed phrase
+    '''0123456789abcdef.*''',  # Test hex keys
+]
+
+# Rule-specific allowlists
+[[rules]]
+description = "Generic API Key"
+id = "generic-api-key"
+regex = '''(?i)(?:key|api|token|secret|password)[=:\s]{0,5}['"]?[0-9a-z\-_]{10,}['"]?'''
+[rules.allowlist]
+paths = [
+    '''tests/.*''',
+    '''examples/.*''',
+]
+
+[[rules]]
+description = "Generic Secret"
+id = "generic-secret"
+regex = '''(?i)secret[=:\s]{0,5}['"]?[0-9a-z\-_]{10,}['"]?'''
+[rules.allowlist]
+paths = [
+    '''tests/.*''',
+    '''examples/.*''',
+]
+
+# Custom rules can be added here if needed
+# [[rules]]
+# description = "Custom rule for project-specific secrets"
+# regex = '''your-custom-regex-here'''
+# [rules.allowlist]
+# paths = ['''tests/.*''']
