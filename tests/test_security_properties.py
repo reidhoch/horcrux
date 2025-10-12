@@ -23,8 +23,8 @@ class TestSecurityProperties:
         # With threshold-1 parts, we should not be able to distinguish
         # which secret was used (this is a theoretical property)
         # Here we just verify that reconstruction fails gracefully
-        insufficient_parts1 = parts1[:threshold-1]
-        insufficient_parts2 = parts2[:threshold-1]
+        insufficient_parts1 = parts1[: threshold - 1]
+        insufficient_parts2 = parts2[: threshold - 1]
 
         # Both should have same number of parts
         assert len(insufficient_parts1) == len(insufficient_parts2)
@@ -84,6 +84,7 @@ class TestSecurityProperties:
 
         # Any 3 parts should work
         from itertools import combinations
+
         for combo in combinations(range(6), 3):
             selected_parts = [parts[i] for i in combo]
             reconstructed = combine(selected_parts)
@@ -107,11 +108,17 @@ class TestErrorConditions:
     def test_combine_error_messages(self) -> None:
         """Test that error messages are exactly as expected."""
         # Test empty parts list
-        with pytest.raises(ValueError, match="Less than two parts cannot be used to reconstruct the secret"):
+        with pytest.raises(
+            ValueError,
+            match="Less than two parts cannot be used to reconstruct the secret",
+        ):
             combine([])
 
         # Test single part
-        with pytest.raises(ValueError, match="Less than two parts cannot be used to reconstruct the secret"):
+        with pytest.raises(
+            ValueError,
+            match="Less than two parts cannot be used to reconstruct the secret",
+        ):
             combine([bytearray(b"single")])
 
         # Test parts too short

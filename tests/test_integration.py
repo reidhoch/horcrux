@@ -18,7 +18,7 @@ class TestRealWorldScenarios:
 
         # Simulate 3 team members coming together
         reconstructed = combine(parts[:3])
-        assert reconstructed.decode('utf-8') == "MyVerySecurePassword123!@#"
+        assert reconstructed.decode("utf-8") == "MyVerySecurePassword123!@#"
 
     def test_api_key_sharing(self) -> None:
         """Test sharing an API key."""
@@ -29,7 +29,7 @@ class TestRealWorldScenarios:
 
         # Any 3 parts should recover the key
         reconstructed = combine(parts[1:4])  # Use parts 1, 2, 3
-        assert reconstructed.decode('utf-8') == "sk-1234567890abcdef1234567890abcdef"
+        assert reconstructed.decode("utf-8") == "sk-1234567890abcdef1234567890abcdef"
 
     def test_cryptocurrency_seed_phrase(self) -> None:
         """Test sharing a cryptocurrency seed phrase."""
@@ -40,12 +40,17 @@ class TestRealWorldScenarios:
 
         # Test with exactly 4 parts
         reconstructed = combine(parts[:4])
-        assert reconstructed.decode('utf-8') == "abandon ability able about above absent absorb abstract absurd abuse access accident"
+        assert (
+            reconstructed.decode("utf-8")
+            == "abandon ability able about above absent absorb abstract absurd abuse access accident"
+        )
 
     def test_file_encryption_key(self) -> None:
         """Test sharing a file encryption key."""
         # Simulate a 256-bit AES key
-        encryption_key = bytes.fromhex("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+        encryption_key = bytes.fromhex(
+            "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+        )
 
         # Split key for backup (2 of 3 scheme for easier recovery)
         parts = split(encryption_key, 3, 2, rng=SystemRandom())
@@ -67,27 +72,27 @@ class TestRealWorldScenarios:
         parts = split(db_connection, 4, 2, rng=SystemRandom())
 
         reconstructed = combine(parts[:2])
-        assert reconstructed.decode('utf-8') == "postgresql://user:password@localhost:5432/database"
+        assert (
+            reconstructed.decode("utf-8")
+            == "postgresql://user:password@localhost:5432/database"
+        )
 
     def test_json_configuration_secret(self) -> None:
         """Test sharing a JSON configuration with secrets."""
         config = {
             "database_url": "postgresql://user:secret@db:5432/app",
-            "api_keys": {
-                "stripe": "sk_test_123456789",
-                "sendgrid": "SG.1234567890"
-            },
-            "jwt_secret": "super-secret-jwt-key-2024"
+            "api_keys": {"stripe": "sk_test_123456789", "sendgrid": "SG.1234567890"},
+            "jwt_secret": "super-secret-jwt-key-2024",
         }
 
-        config_bytes = json.dumps(config, sort_keys=True).encode('utf-8')
+        config_bytes = json.dumps(config, sort_keys=True).encode("utf-8")
 
         # Split configuration (3 of 5)
         parts = split(config_bytes, 5, 3, rng=SystemRandom())
 
         # Reconstruct and verify
         reconstructed = combine(parts[:3])
-        reconstructed_config = json.loads(reconstructed.decode('utf-8'))
+        reconstructed_config = json.loads(reconstructed.decode("utf-8"))
 
         assert reconstructed_config == config
 
@@ -95,14 +100,21 @@ class TestRealWorldScenarios:
         """Simulate a backup and recovery scenario."""
         # Simulate important data
         important_data = "Critical business data that must not be lost" * 100
-        data_bytes = important_data.encode('utf-8')
+        data_bytes = important_data.encode("utf-8")
 
         # Create shares for geographic distribution
         shares = split(data_bytes, 7, 4, rng=SystemRandom())  # 4 of 7
 
         # Simulate storing shares in different locations
-        locations = ["AWS-US-East", "AWS-EU-West", "GCP-Asia", "Azure-US-West",
-                    "On-Premise-DC1", "On-Premise-DC2", "Cold-Storage"]
+        locations = [
+            "AWS-US-East",
+            "AWS-EU-West",
+            "GCP-Asia",
+            "Azure-US-West",
+            "On-Premise-DC1",
+            "On-Premise-DC2",
+            "Cold-Storage",
+        ]
 
         assert len(shares) == len(locations)
 
@@ -111,7 +123,7 @@ class TestRealWorldScenarios:
 
         # Should still be able to recover
         recovered = combine(available_shares)
-        assert recovered.decode('utf-8') == important_data
+        assert recovered.decode("utf-8") == important_data
 
     def test_progressive_revelation(self) -> None:
         """Test progressive revelation scenario."""
@@ -133,7 +145,9 @@ class TestRealWorldScenarios:
                 continue
             # With all 5 parts, should work
             reconstructed = combine(collected_parts)
-            assert reconstructed.decode('utf-8') == "Nuclear launch codes: 1234-5678-9012"
+            assert (
+                reconstructed.decode("utf-8") == "Nuclear launch codes: 1234-5678-9012"
+            )
 
     def test_multi_language_text(self) -> None:
         """Test with text in multiple languages."""
@@ -147,7 +161,7 @@ class TestRealWorldScenarios:
         Russian: Привет мир
         Arabic: مرحبا بالعالم
         Hindi: नमस्ते दुनिया
-        """.strip().encode('utf-8')
+        """.strip().encode("utf-8")
 
         parts = split(multilingual_secret, 6, 4, rng=SystemRandom())
         reconstructed = combine(parts[:4])
@@ -177,7 +191,7 @@ class TestRealWorldScenarios:
             "frontend-repo": parts[0],
             "backend-repo": parts[1],
             "devops-repo": parts[2],
-            "security-repo": parts[3]
+            "security-repo": parts[3],
         }
 
         # Any 3 repos should allow reconstruction
@@ -185,4 +199,4 @@ class TestRealWorldScenarios:
         selected_parts = [repo_parts[repo] for repo in selected_repos]
 
         reconstructed = combine(selected_parts)
-        assert reconstructed.decode('utf-8') == "production-deployment-key-v2024"
+        assert reconstructed.decode("utf-8") == "production-deployment-key-v2024"

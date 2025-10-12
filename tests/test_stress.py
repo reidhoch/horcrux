@@ -44,7 +44,9 @@ class TestStressTesting:
 
                 assert reconstructed == secret
                 assert len(parts) == 10
-                print(f"10 parts split: {split_duration:.2f}s, combine: {combine_duration:.2f}s")
+                print(
+                    f"10 parts split: {split_duration:.2f}s, combine: {combine_duration:.2f}s"
+                )
                 return  # Success
             except ValueError as e:
                 if "Duplicate part detected" in str(e):
@@ -73,7 +75,9 @@ class TestStressTesting:
                     continue  # Skip this iteration
                 raise
 
-        assert successful >= iterations, f"Only {successful} successful operations out of {iterations} required"
+        assert successful >= iterations, (
+            f"Only {successful} successful operations out of {iterations} required"
+        )
 
     def test_memory_efficiency(self) -> None:
         """Test memory usage with large data."""
@@ -100,7 +104,7 @@ class TestStressTesting:
 
             # Memory should be reasonable (not exact due to Python's memory management)
             memory_increase = after_combine_memory - initial_memory
-            print(f"Memory increase: {memory_increase / (1024*1024):.2f}MB")
+            print(f"Memory increase: {memory_increase / (1024 * 1024):.2f}MB")
         except ImportError:
             pytest.skip("psutil not available")
 
@@ -169,9 +173,9 @@ class TestStressTesting:
     def test_pathological_inputs(self) -> None:
         """Test with pathological input patterns."""
         patterns = [
-            b"\x00" * 1000,           # All zeros
-            b"\xFF" * 1000,           # All ones
-            bytes(range(256)) * 4,     # Repeating pattern
+            b"\x00" * 1000,  # All zeros
+            b"\xff" * 1000,  # All ones
+            bytes(range(256)) * 4,  # Repeating pattern
             bytes(i % 256 for i in range(1000)),  # Modular pattern
         ]
 
@@ -186,17 +190,19 @@ class TestStressTesting:
 
         # Test smaller, safer threshold configurations
         configs = [
-            (2, 2),    # Minimum
-            (3, 2),    # 2 of 3
-            (5, 3),    # 3 of 5
-            (7, 4),    # 4 of 7
+            (2, 2),  # Minimum
+            (3, 2),  # 2 of 3
+            (5, 3),  # 3 of 5
+            (7, 4),  # 4 of 7
         ]
 
         for parts_count, threshold in configs:
             successful = False
             for seed in range(10):  # Try multiple seeds
                 try:
-                    parts = split(secret, parts_count, threshold, rng=Random(seed * 10000))
+                    parts = split(
+                        secret, parts_count, threshold, rng=Random(seed * 10000)
+                    )
 
                     # Test with exactly threshold parts
                     reconstructed = combine(parts[:threshold])
@@ -204,7 +210,7 @@ class TestStressTesting:
 
                     # Test with more than threshold parts
                     if parts_count > threshold:
-                        reconstructed = combine(parts[:threshold + 1])
+                        reconstructed = combine(parts[: threshold + 1])
                         assert reconstructed == secret
 
                     successful = True
@@ -214,7 +220,9 @@ class TestStressTesting:
                         continue
                     raise
 
-            assert successful, f"Could not find working seed for config {parts_count}/{threshold}"
+            assert successful, (
+                f"Could not find working seed for config {parts_count}/{threshold}"
+            )
 
     def test_deterministic_behavior_stress(self) -> None:
         """Test that deterministic RNG produces consistent results."""
@@ -292,7 +300,9 @@ class TestBenchmarks:
 
                     assert reconstructed == secret
                     results.append((parts_count, threshold, split_time, combine_time))
-                    print(f"{parts_count}/{threshold}: split={split_time:.3f}s, combine={combine_time:.3f}s")
+                    print(
+                        f"{parts_count}/{threshold}: split={split_time:.3f}s, combine={combine_time:.3f}s"
+                    )
                     successful = True
                     break
                 except ValueError as e:
@@ -305,10 +315,10 @@ class TestBenchmarks:
     def test_size_scalability_benchmark(self) -> None:
         """Benchmark with different secret sizes."""
         sizes = [
-            1024,           # 1KB
-            10 * 1024,      # 10KB
-            100 * 1024,     # 100KB
-            1024 * 1024,    # 1MB
+            1024,  # 1KB
+            10 * 1024,  # 10KB
+            100 * 1024,  # 100KB
+            1024 * 1024,  # 1MB
         ]
 
         for size in sizes:
@@ -323,4 +333,6 @@ class TestBenchmarks:
             combine_time = time.time() - start
 
             assert reconstructed == secret
-            print(f"{size//1024}KB: split={split_time:.3f}s, combine={combine_time:.3f}s")
+            print(
+                f"{size // 1024}KB: split={split_time:.3f}s, combine={combine_time:.3f}s"
+            )

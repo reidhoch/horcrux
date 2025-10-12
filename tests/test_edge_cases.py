@@ -34,7 +34,9 @@ class TestEdgeCases:
                     continue  # Try next seed
                 raise  # Different error, re-raise
 
-        pytest.fail("Could not find a seed that avoids x-coordinate collisions for 20 parts")
+        pytest.fail(
+            "Could not find a seed that avoids x-coordinate collisions for 20 parts"
+        )
 
     def test_large_secret(self) -> None:
         """Test with a large secret (1MB)."""
@@ -92,7 +94,10 @@ class TestEdgeCases:
 
         # Test with different combinations of 5 parts
         import itertools
-        for combo in list(itertools.combinations(range(10), 5))[:10]:  # Test first 10 combinations
+
+        for combo in list(itertools.combinations(range(10), 5))[
+            :10
+        ]:  # Test first 10 combinations
             selected_parts = [parts[i] for i in combo]
             reconstructed = combine(selected_parts)
             assert reconstructed == secret
@@ -125,7 +130,12 @@ class TestEdgeCases:
             # Try multiple seeds if needed to avoid collisions
             for seed_offset in range(0, 10000, 1000):
                 try:
-                    parts = split(secret, 3, 2, rng=Random(100000 + byte_value * 1000 + seed_offset))
+                    parts = split(
+                        secret,
+                        3,
+                        2,
+                        rng=Random(100000 + byte_value * 1000 + seed_offset),
+                    )
                     reconstructed = combine(parts[:2])
                     assert reconstructed == secret
                     break  # Success, move to next byte value
@@ -134,7 +144,9 @@ class TestEdgeCases:
                         continue  # Try next seed
                     raise  # Different error, re-raise
             else:
-                pytest.fail(f"Could not find non-colliding x-coordinates for byte value {byte_value}")
+                pytest.fail(
+                    f"Could not find non-colliding x-coordinates for byte value {byte_value}"
+                )
 
     def test_x_coordinate_collision_handling(self) -> None:
         """Test that x-coordinate collisions are properly detected."""
