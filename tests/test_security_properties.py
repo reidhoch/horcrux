@@ -1,8 +1,9 @@
 """Property-based and security tests for Shamir's Secret Sharing."""
 
+from random import Random
+
 import pytest
-from random import Random, SystemRandom
-from typing import List
+
 from shamir import combine, split
 
 
@@ -36,7 +37,7 @@ class TestSecurityProperties:
 
         # Test with various combinations less than threshold
         for num_parts in range(1, threshold):
-            subset_parts = parts[:num_parts]
+            parts[:num_parts]
             # Note: Current implementation doesn't enforce minimum threshold
             # This test documents the expected behavior for a complete implementation
 
@@ -220,7 +221,6 @@ class TestPerformance:
             except ValueError as e:
                 if "Duplicate part detected" in str(e):
                     continue  # Try next seed
-                else:
-                    raise  # Different error, re-raise
+                raise  # Different error, re-raise
 
         pytest.fail("Could not find a seed that avoids x-coordinate collisions")

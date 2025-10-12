@@ -1,9 +1,11 @@
 """Mathematical property tests for the Shamir Secret Sharing implementation."""
 
-import pytest
 from random import Random
+
+import pytest
+
 from shamir import combine, split
-from shamir.math import add, mul, div
+from shamir.math import add, div, mul
 from shamir.utils import Polynomial, interpolate
 
 
@@ -119,7 +121,7 @@ class TestMathematicalProperties:
         assert len(secret1) == len(secret2)
 
         # XOR the secrets
-        secret_xor = bytes(a ^ b for a, b in zip(secret1, secret2))
+        secret_xor = bytes(a ^ b for a, b in zip(secret1, secret2, strict=False))
 
         # Split all secrets - they will have different random polynomials
         parts1 = split(secret1, 5, 3, rng=Random(12345))

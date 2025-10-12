@@ -1,10 +1,8 @@
 """Integration tests for real-world usage scenarios."""
 
 import json
-import tempfile
-import os
-from pathlib import Path
 from random import SystemRandom
+
 from shamir import combine, split
 
 
@@ -13,7 +11,7 @@ class TestRealWorldScenarios:
 
     def test_password_sharing(self) -> None:
         """Test sharing a password among team members."""
-        password = "MyVerySecurePassword123!@#".encode('utf-8')
+        password = b"MyVerySecurePassword123!@#"
 
         # Split among 5 team members, any 3 can recover
         parts = split(password, 5, 3, rng=SystemRandom())
@@ -24,7 +22,7 @@ class TestRealWorldScenarios:
 
     def test_api_key_sharing(self) -> None:
         """Test sharing an API key."""
-        api_key = "sk-1234567890abcdef1234567890abcdef".encode('utf-8')
+        api_key = b"sk-1234567890abcdef1234567890abcdef"
 
         # Split for disaster recovery (3 of 5 scheme)
         parts = split(api_key, 5, 3, rng=SystemRandom())
@@ -35,7 +33,7 @@ class TestRealWorldScenarios:
 
     def test_cryptocurrency_seed_phrase(self) -> None:
         """Test sharing a cryptocurrency seed phrase."""
-        seed_phrase = "abandon ability able about above absent absorb abstract absurd abuse access accident".encode('utf-8')
+        seed_phrase = b"abandon ability able about above absent absorb abstract absurd abuse access accident"
 
         # High security: 4 of 7 scheme (reduced to avoid collision issues)
         parts = split(seed_phrase, 7, 4, rng=SystemRandom())
@@ -63,7 +61,7 @@ class TestRealWorldScenarios:
 
     def test_database_credentials(self) -> None:
         """Test sharing database connection string."""
-        db_connection = "postgresql://user:password@localhost:5432/database".encode('utf-8')
+        db_connection = b"postgresql://user:password@localhost:5432/database"
 
         # Split among DevOps team (any 2 of 4)
         parts = split(db_connection, 4, 2, rng=SystemRandom())
@@ -117,7 +115,7 @@ class TestRealWorldScenarios:
 
     def test_progressive_revelation(self) -> None:
         """Test progressive revelation scenario."""
-        secret = "Nuclear launch codes: 1234-5678-9012".encode('utf-8')
+        secret = b"Nuclear launch codes: 1234-5678-9012"
 
         # Create a 5 of 5 scheme (all parts needed)
         parts = split(secret, 5, 5, rng=SystemRandom())
@@ -125,7 +123,7 @@ class TestRealWorldScenarios:
         # Simulate collecting parts one by one
         collected_parts = []
 
-        for i, part in enumerate(parts):
+        for _i, part in enumerate(parts):
             collected_parts.append(part)
 
             if len(collected_parts) < 5:
@@ -133,10 +131,9 @@ class TestRealWorldScenarios:
                 # Note: Current implementation doesn't enforce this,
                 # so we just document the behavior
                 continue
-            else:
-                # With all 5 parts, should work
-                reconstructed = combine(collected_parts)
-                assert reconstructed.decode('utf-8') == "Nuclear launch codes: 1234-5678-9012"
+            # With all 5 parts, should work
+            reconstructed = combine(collected_parts)
+            assert reconstructed.decode('utf-8') == "Nuclear launch codes: 1234-5678-9012"
 
     def test_multi_language_text(self) -> None:
         """Test with text in multiple languages."""
@@ -170,7 +167,7 @@ class TestRealWorldScenarios:
 
     def test_version_control_scenario(self) -> None:
         """Test scenario where parts are stored in version control."""
-        secret = "production-deployment-key-v2024".encode('utf-8')
+        secret = b"production-deployment-key-v2024"
 
         # Split for storage in different repositories
         parts = split(secret, 4, 3, rng=SystemRandom())

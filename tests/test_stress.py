@@ -1,8 +1,10 @@
 """Simplified stress tests that avoid x-coordinate collision issues."""
 
-import pytest
 import time
 from random import Random, SystemRandom
+
+import pytest
+
 from shamir import combine, split
 
 
@@ -47,8 +49,7 @@ class TestStressTesting:
             except ValueError as e:
                 if "Duplicate part detected" in str(e):
                     continue  # Try next seed
-                else:
-                    raise
+                raise
 
         pytest.fail("Could not find seed avoiding collisions")
 
@@ -70,16 +71,16 @@ class TestStressTesting:
             except ValueError as e:
                 if "Duplicate part detected" in str(e):
                     continue  # Skip this iteration
-                else:
-                    raise
+                raise
 
         assert successful >= iterations, f"Only {successful} successful operations out of {iterations} required"
 
     def test_memory_efficiency(self) -> None:
         """Test memory usage with large data."""
         try:
-            import psutil
             import os
+
+            import psutil
 
             process = psutil.Process(os.getpid())
             initial_memory = process.memory_info().rss
@@ -89,7 +90,7 @@ class TestStressTesting:
 
             # Split and measure memory
             parts = split(secret, 5, 3, rng=Random(12345))
-            after_split_memory = process.memory_info().rss
+            process.memory_info().rss
 
             # Combine and measure memory
             reconstructed = combine(parts[:3])
@@ -105,13 +106,12 @@ class TestStressTesting:
 
     def test_concurrent_operations(self) -> None:
         """Test concurrent split/combine operations."""
-        import threading
         import queue
-        from typing import Tuple
+        import threading
 
         secret = b"concurrent_test"
-        results: queue.Queue[Tuple[int, bool]] = queue.Queue()
-        errors: queue.Queue[Tuple[int, Exception]] = queue.Queue()
+        results: queue.Queue[tuple[int, bool]] = queue.Queue()
+        errors: queue.Queue[tuple[int, Exception]] = queue.Queue()
 
         def worker(worker_id: int) -> None:
             try:
@@ -162,8 +162,7 @@ class TestStressTesting:
                 except ValueError as e:
                     if "Duplicate part detected" in str(e):
                         continue
-                    else:
-                        raise
+                    raise
 
             assert successful >= 3, f"Could not get 3 successes for size {size}"
 
@@ -213,8 +212,7 @@ class TestStressTesting:
                 except ValueError as e:
                     if "Duplicate part detected" in str(e):
                         continue
-                    else:
-                        raise
+                    raise
 
             assert successful, f"Could not find working seed for config {parts_count}/{threshold}"
 
@@ -240,7 +238,7 @@ class TestStressTesting:
         # Generate secrets and process them
         for i in range(200):  # Try more to get enough successes
             try:
-                secret = f"integrity_test_{i}".encode('utf-8')
+                secret = f"integrity_test_{i}".encode()
 
                 parts = split(secret, 5, 3, rng=Random(i * 5000))
                 reconstructed = combine(parts[:3])
@@ -254,13 +252,12 @@ class TestStressTesting:
             except ValueError as e:
                 if "Duplicate part detected" in str(e):
                     continue
-                else:
-                    raise
+                raise
 
         assert successful >= 50, f"Only got {successful} successes"
 
         # Verify all reconstructions are correct
-        for orig, recon in zip(original_secrets, reconstructed_secrets):
+        for orig, recon in zip(original_secrets, reconstructed_secrets, strict=False):
             assert orig == recon
 
 
@@ -301,8 +298,7 @@ class TestBenchmarks:
                 except ValueError as e:
                     if "Duplicate part detected" in str(e):
                         continue
-                    else:
-                        raise
+                    raise
 
             assert successful, f"Could not benchmark {parts_count}/{threshold}"
 

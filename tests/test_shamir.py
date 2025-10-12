@@ -37,10 +37,10 @@ def test_combine_invalid() -> None:
 def test_split() -> None:
     secret: bytearray = bytearray("test", "ascii")
     out: list[bytearray] = split(secret, 5, 3, rng=Random(54321))
-    assert len(out) == 5  # noqa: SCS108
+    assert len(out) == 5
     first_part_len: int = len(out[0])
     for part in out:
-        assert len(part) == first_part_len  # noqa: SCS108
+        assert len(part) == first_part_len
 
 
 def test_split_invalid() -> None:

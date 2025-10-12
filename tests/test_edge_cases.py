@@ -1,9 +1,10 @@
 """Edge case tests for Shamir's Secret Sharing implementation."""
 
-import pytest
 from random import Random
+
+import pytest
+
 from shamir import combine, split
-from shamir.errors import Error
 
 
 class TestEdgeCases:
@@ -31,8 +32,7 @@ class TestEdgeCases:
             except ValueError as e:
                 if "Duplicate part detected" in str(e):
                     continue  # Try next seed
-                else:
-                    raise  # Different error, re-raise
+                raise  # Different error, re-raise
 
         pytest.fail("Could not find a seed that avoids x-coordinate collisions for 20 parts")
 
@@ -66,7 +66,7 @@ class TestEdgeCases:
 
     def test_unicode_encoded_secret(self) -> None:
         """Test with unicode text encoded as bytes."""
-        secret = "Hello, 世界! 🌍".encode('utf-8')
+        secret = "Hello, 世界! 🌍".encode()
         parts = split(secret, 5, 3, rng=Random(12345))
         reconstructed = combine(parts[:3])
         assert reconstructed == secret
@@ -132,8 +132,7 @@ class TestEdgeCases:
                 except ValueError as e:
                     if "Duplicate part detected" in str(e):
                         continue  # Try next seed
-                    else:
-                        raise  # Different error, re-raise
+                    raise  # Different error, re-raise
             else:
                 pytest.fail(f"Could not find non-colliding x-coordinates for byte value {byte_value}")
 
