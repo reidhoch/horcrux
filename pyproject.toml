@@ -1,36 +1,47 @@
-[tool.mypy]
-python_version = "3.11"
-follow_imports = "silent"
-strict_optional = true
-strict_equality = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-disallow_any_generics = true
-check_untyped_defs = true
-no_implicit_reexport = true
-disallow_untyped_defs = true
-ignore_missing_imports = true
-show_column_numbers = true
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
 
-
-[tool.poetry]
-authors = ["Reid Hochstedler <reidhoch@gmail.com>"]
+[project]
+name = "horcrux"
+version = "1.0.4"
+description = "A Python implementation of Shamir's Secret Sharing"
+authors = [{ name = "Reid Hochstedler", email = "reidhoch@gmail.com" }]
+license = { text = "MPL-2.0" }
+readme = "README.md"
+requires-python = ">=3.11"
+keywords = ["cryptography", "secret-sharing", "shamir", "security", "vault"]
 classifiers = [
+  "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
+  "License :: OSI Approved :: Mozilla Public License 2.0 (MPL-2.0)",
+  "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3 :: Only",
   "Topic :: Security",
   "Topic :: Security :: Cryptography",
   "Topic :: Software Development :: Libraries :: Python Modules",
+  "Typing :: Typed",
 ]
-description = "Horcrux - A Python implementation of Shamir's Secret Sharing."
-license = "MPL-2.0"
+
+[project.urls]
+Homepage = "https://github.com/reidhoch/horcrux"
+Repository = "https://github.com/reidhoch/horcrux"
+Documentation = "https://github.com/reidhoch/horcrux#readme"
+"Bug Tracker" = "https://github.com/reidhoch/horcrux/issues"
+Changelog = "https://github.com/reidhoch/horcrux/releases"
+
+[tool.poetry]
 name = "horcrux"
-packages = [{ include = "shamir" }]
+version = "1.0.4"
+description = "A Python implementation of Shamir's Secret Sharing"
+authors = ["Reid Hochstedler <reidhoch@gmail.com>"]
+license = "MPL-2.0"
 readme = "README.md"
 repository = "https://github.com/reidhoch/horcrux"
-version = "1.0.4"
+packages = [{ include = "shamir" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -45,15 +56,43 @@ ruff = ">=0.11.13,<0.15.0"
 tox = "^4.26"
 typer = { extras = ["all"], version = ">=0.16,<0.20" }
 
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+show_column_numbers = true
+show_error_codes = true
+pretty = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+
 [tool.ruff]
 line-length = 88
+target-version = "py311"
 extend-exclude = ["examples", "tests"]
-lint.select = ["ALL"]
-target-version = 'py311'
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = []
 
 [tool.ruff.lint.per-file-ignores]
 "shamir/math/__init__.py" = ["A005"]
 
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+[tool.ruff.lint.isort]
+known-first-party = ["shamir"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = [
+  "--strict-markers",
+  "--strict-config",
+  "-ra",
+]
+testpaths = ["tests"]
+pythonpath = ["."]
