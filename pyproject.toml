@@ -59,8 +59,6 @@ typer = { extras = ["all"], version = ">=0.16,<0.20" }
 [tool.mypy]
 python_version = "3.11"
 strict = true
-warn_redundant_casts = true
-warn_unused_ignores = true
 show_column_numbers = true
 show_error_codes = true
 pretty = true
