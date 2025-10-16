@@ -58,6 +58,10 @@ pretty = true
 module = "tests.*"
 disallow_untyped_defs = false
 
+[[tool.mypy.overrides]]
+module = "examples.*"
+disallow_untyped_defs = false
+
 [tool.ruff]
 line-length = 88
 target-version = "py311"
