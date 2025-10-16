@@ -1,10 +1,10 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
 name = "horcrux"
-version = "1.0.4"
+dynamic = ["version"]
 description = "A Python implementation of Shamir's Secret Sharing"
 authors = [{ name = "Reid Hochstedler", email = "reidhoch@gmail.com" }]
 license = { text = "MPL-2.0" }
@@ -43,6 +43,12 @@ dev = [
   "tox>=4.26",
   "typer>=0.16,<0.20",
 ]
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "shamir/_version.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["shamir"]

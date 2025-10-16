@@ -171,7 +171,6 @@ wheels = [
 
 [[package]]
 name = "horcrux"
-version = "1.0.4"
 source = { editable = "." }
 
 [package.dev-dependencies]
