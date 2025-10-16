@@ -9,7 +9,7 @@ Horcrux is a Python implementation of Shamir's Secret Sharing based on HashiCorp
 - **`shamir/__init__.py`**: Public API with `split()` and `combine()` functions
 - **`shamir/math/`**: Galois Field GF(256) operations (`add`, `mul`, `div`) using pre-computed log/exp tables
 - **`shamir/utils/`**: Polynomial class for Lagrange interpolation
-- **`shamir/errors.py`: Error enum with exact, user-facing error messages
+- **`shamir/errors.py`**: Error enum with exact, user-facing error messages
 
 ### Mathematical Foundation
 - **Field**: GF(256) - all operations use lookup tables in `shamir/math/tables.py`
