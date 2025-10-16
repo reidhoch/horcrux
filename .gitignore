@@ -280,3 +280,6 @@ pip-selfcheck.json
 # GitLeaks
 gitleaks-report.*
 .gitleaks/
+
+# Generated version file
+shamir/_version.py

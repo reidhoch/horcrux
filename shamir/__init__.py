@@ -7,7 +7,18 @@ from shamir.utils import Polynomial, interpolate
 
 from .errors import Error
 
-__all__: list[str] = ["combine", "split"]
+__all__: list[str] = ["__version__", "combine", "split"]
+
+try:
+    from shamir._version import __version__
+except ImportError:
+    # Version file is generated during build
+    try:
+        from importlib.metadata import PackageNotFoundError, version
+
+        __version__ = version("horcrux")
+    except PackageNotFoundError:
+        __version__ = "unknown"
 
 TWO: Final[int] = 2
 MAX_PARTS: Final[int] = 255
