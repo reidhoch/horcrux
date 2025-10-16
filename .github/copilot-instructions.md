@@ -25,34 +25,46 @@ Horcrux is a Python implementation of Shamir's Secret Sharing based on HashiCorp
 
 ## Development Workflow
 
+### Setup
+```bash
+# Install dependencies (creates virtual environment automatically)
+uv sync --group dev
+
+# Or use uv run to auto-install dependencies on first run
+uv run pytest
+```
+
 ### Testing
 ```bash
 # Run full test suite (72 tests, 100% coverage)
-poetry run pytest
+uv run pytest
 
 # Run with coverage report
-poetry run pytest --cov=shamir --cov-branch --cov-report=xml
+uv run pytest --cov=shamir --cov-branch --cov-report=xml
 
 # Run tests in parallel
-poetry run pytest -n auto
+uv run pytest -n auto
 
 # Run specific test category
-poetry run pytest tests/test_mathematical_properties.py
+uv run pytest tests/test_mathematical_properties.py
 ```
 
 ### Linting and Formatting
 ```bash
 # Format code (must pass in CI)
-poetry run ruff format shamir
+uv run ruff format shamir
 
 # Check formatting without modifying
-poetry run ruff format --check shamir
+uv run ruff format --check shamir
 
 # Run linter (ALL rules enabled)
-poetry run ruff check shamir
+uv run ruff check shamir
 
 # Auto-fix issues
-poetry run ruff check --fix shamir
+uv run ruff check --fix shamir
+
+# Type checking
+uv run mypy shamir
 ```
 
 ### Multi-Version Testing
@@ -60,6 +72,13 @@ poetry run ruff check --fix shamir
 # Test across Python 3.11, 3.12, 3.13
 tox
 ```
+
+### Build System
+- **Uses Hatch** for build backend (PEP 621 compliant)
+- **Uses uv** for dependency management (replaces Poetry/pip)
+- Dependencies in `[dependency-groups]` section of `pyproject.toml`
+- Package building: `uv build`
+- Publishing: `uv publish`
 
 ## Code Conventions
 
@@ -121,8 +140,13 @@ tox
 - `ruff`: Linting and formatting (replaces flake8, black, isort)
 - `mypy`: Type checking with strict mode
 - `tox`: Multi-version testing
-- `typer[all]`: CLI utilities (examples only)
+- `typer`: CLI utilities (examples only)
 - `pre-commit`: Git hooks
+
+**Package Manager**: `uv` - Fast Python package installer and resolver
+- Install with: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- Auto-creates virtual environments
+- Commands: `uv sync`, `uv run`, `uv add`, `uv build`, `uv publish`
 
 ## Common Patterns
 
@@ -166,7 +190,8 @@ result = div(a, b)  # raises ZeroDivisionError if b == 0
 - Coverage uploaded to codecov (100% required)
 - Ruff format check must pass (blocking)
 - All Ruff lint rules must pass (blocking)
-- Uses Poetry 2.1.3+ for dependency management
+- Uses Hatch for build backend (PEP 621 compliant)
+- Uses `uv` for dependency management and publishing
 - Security scanning via CodeQL and Scorecards
 
 ## Troubleshooting Common Issues
@@ -239,7 +264,7 @@ data = []  # Error: need explicit type
 data: list[bytearray] = []  # Correct
 ```
 
-**Solution**: Use `poetry run mypy shamir` to check; all strict flags are enabled
+**Solution**: Use `uv run mypy shamir` to check; all strict flags are enabled
 
 ### Ruff Linting Failures
 **Problem**: CI fails on Ruff checks but local `ruff check` passes
@@ -249,12 +274,12 @@ data: list[bytearray] = []  # Correct
 **Solution**:
 ```bash
 # Match CI behavior
-poetry run ruff format --no-cache --check shamir
-poetry run ruff check --no-cache shamir
+uv run ruff format --no-cache --check shamir
+uv run ruff check --no-cache shamir
 
 # Clear cache and re-run
 rm -rf .ruff_cache
-poetry run ruff check shamir
+uv run ruff check shamir
 ```
 
 ### Test Failures Due to Non-Determinism
@@ -281,7 +306,7 @@ parts = split(secret, 10, 5, rng=Random(42))
 **Solution**:
 ```bash
 # Generate HTML coverage report
-poetry run pytest --cov=shamir --cov-branch --cov-report=html
+uv run pytest --cov=shamir --cov-branch --cov-report=html
 
 # Open htmlcov/index.html to see missing lines
 open htmlcov/index.html  # macOS
