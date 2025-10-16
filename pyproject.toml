@@ -74,7 +74,6 @@ extend-exclude = ["examples", "tests"]
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = []
 
 [tool.ruff.lint.per-file-ignores]
 "shamir/math/__init__.py" = ["A005"]
