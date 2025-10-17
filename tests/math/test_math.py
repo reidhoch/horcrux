@@ -23,6 +23,10 @@ def test_inverse() -> None:
     for a in range(1, 256):  # All non-zero values: 1 through 255
         assert mul(a, inverse(a)) == 1
 
+def test_inverse_zero() -> None:
+    with pytest.raises(ArithmeticError):
+        assert inverse(0)
+
 def test_mul() -> None:
     assert mul(3, 7) == 9
     assert mul(3, 0) == 0

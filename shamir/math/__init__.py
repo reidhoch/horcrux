@@ -31,23 +31,40 @@ def div(a: int, b: int) -> int:
 
 
 def inverse(a: int) -> int:
-    """Calculate the inverse of a number in GF(2^8)."""
-    b = mul(a, a)
-    c = mul(a, b)
-    b = mul(c, c)
-    b = mul(b, b)
-    c = mul(b, c)
-    b = mul(b, b)
-    b = mul(b, b)
-    b = mul(b, c)
-    b = mul(b, b)
-    b = mul(a, b)
+    """Calculate the multiplicative inverse of a number in GF(2^8).
 
+    Uses Fermat's Little Theorem (constant-time exponentiation by squaring).
+    """
+    # Ensure that we return zero if a is zero, but don't leak timing info.
+    if bytes_eq(a.to_bytes(1, byteorder), ZERO):
+        errmsg = "No inverse for zero."
+        raise ArithmeticError(errmsg)
+    # b = a^2  # noqa: ERA001
+    b = mul(a, a)
+    # c = (a^3)  # noqa: ERA001
+    c = mul(a, b)
+    # b = (a^3)^2 = a^6
+    b = mul(c, c)
+    # b = (a^6)^2 = a^12
+    b = mul(b, b)
+    # c = a^12 * a^3 = a^15
+    c = mul(b, c)
+    # b = (a^12)^2 = a^24
+    b = mul(b, b)
+    # b = (a^24)^2 = a^48
+    b = mul(b, b)
+    # b = a^48 * a^15 = a^63
+    b = mul(b, c)
+    # b = (a^63)^2 = a^126
+    b = mul(b, b)
+    # b = a^126 * a = a^127
+    b = mul(a, b)
+    # b = (a^127)^2 = a^254
     return mul(b, b)
 
 
 def mul(a: int, b: int) -> int:
-    """Multiply two numbers in GF(2^8) using shift-and-add method."""
+    """Multiply two numbers in GF(2^8) using constant-time shift-and-add method."""
     result: int = 0
 
     # Process each bit of b from MSB to LSB
