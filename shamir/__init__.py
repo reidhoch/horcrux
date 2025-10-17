@@ -78,8 +78,11 @@ def split(
     if not rng:
         raise ValueError(Error.UNINITIALIZED_RNG)
 
-    # Generate a random list of x coordinates.
-    x_coords: list[int] = [rng.randrange(0, 255) for _ in range(1, 256)]
+    # Generate a random list of unique x coordinates using Fisher-Yates shuffle.
+    # This ensures no collisions by starting with unique values [0..254].
+    # We add 1 when storing to get final x-coordinates in [1..255].
+    x_coords: list[int] = list(range(0, 255))
+    rng.shuffle(x_coords)
 
     # Allocate output array
     output: list[bytearray] = [bytearray() for _ in range(parts)]
