@@ -201,26 +201,15 @@ class TestPerformance:
 
         import time
 
-        # Try different seeds to find one that works
-        for seed in [123, 456, 789, 111, 222]:
-            try:
-                start_time = time.time()
-                parts = split(secret, 15, 15, rng=Random(seed))
-                split_time = time.time() - start_time
+        start_time = time.time()
+        parts = split(secret, 15, 15, rng=Random(123))
+        split_time = time.time() - start_time
 
-                start_time = time.time()
-                reconstructed = combine(parts)
-                combine_time = time.time() - start_time
+        start_time = time.time()
+        reconstructed = combine(parts)
+        combine_time = time.time() - start_time
 
-                assert reconstructed == secret
-                assert len(parts) == 15
-                assert split_time > 0
-                assert combine_time > 0
-                return  # Success
-            except ValueError as e:
-                if "Duplicate part detected" in str(e):
-                    continue  # Try next seed
-                else:
-                    raise  # Different error, re-raise
-
-        pytest.fail("Could not find a seed that avoids x-coordinate collisions")
+        assert reconstructed == secret
+        assert len(parts) == 15
+        assert split_time > 0
+        assert combine_time > 0
