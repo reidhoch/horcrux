@@ -29,51 +29,28 @@ class TestStressTesting:
         """Test with moderate number of parts."""
         secret = b"moderate_parts_test" * 10
 
-        # Use a safe number of parts to avoid collisions
-        for seed in [12345, 54321, 98765]:
-            try:
-                start = time.time()
-                parts = split(secret, 10, 5, rng=Random(seed))
-                split_duration = time.time() - start
+        start = time.time()
+        parts = split(secret, 10, 5, rng=Random(12345))
+        split_duration = time.time() - start
 
-                start = time.time()
-                reconstructed = combine(parts[:5])
-                combine_duration = time.time() - start
+        start = time.time()
+        reconstructed = combine(parts[:5])
+        combine_duration = time.time() - start
 
-                assert reconstructed == secret
-                assert len(parts) == 10
-                print(f"10 parts split: {split_duration:.2f}s, combine: {combine_duration:.2f}s")
-                return  # Success
-            except ValueError as e:
-                if "Duplicate part detected" in str(e):
-                    continue  # Try next seed
-                else:
-                    raise
-
-        pytest.fail("Could not find seed avoiding collisions")
+        assert reconstructed == secret
+        assert len(parts) == 10
+        print(f"10 parts split: {split_duration:.2f}s, combine: {combine_duration:.2f}s")
 
     def test_repeated_operations_stress(self) -> None:
         """Test repeated split/combine operations."""
         secret = b"repeated_operations_test"
-        iterations = 100  # Reduced from 1000 to avoid collisions
-        successful = 0
+        iterations = 100
 
-        for i in range(iterations * 2):  # Try more iterations to get enough successes
-            try:
-                rng = Random(i * 1000)  # Use different seeds to avoid collisions
-                parts = split(secret, 5, 3, rng=rng)
-                reconstructed = combine(parts[:3])
-                assert reconstructed == secret
-                successful += 1
-                if successful >= iterations:
-                    break
-            except ValueError as e:
-                if "Duplicate part detected" in str(e):
-                    continue  # Skip this iteration
-                else:
-                    raise
-
-        assert successful >= iterations, f"Only {successful} successful operations out of {iterations} required"
+        for i in range(iterations):
+            rng = Random(i * 1000)
+            parts = split(secret, 5, 3, rng=rng)
+            reconstructed = combine(parts[:3])
+            assert reconstructed == secret
 
     def test_memory_efficiency(self) -> None:
         """Test memory usage with large data."""
@@ -149,23 +126,11 @@ class TestStressTesting:
         sizes = [1, 10, 100, 1000, 10000]
 
         for size in sizes:
-            successful = 0
-            for attempt in range(20):  # Try multiple times
-                try:
-                    secret = rng.randbytes(size)
-                    parts = split(secret, 5, 3, rng=Random(size * 1000 + attempt))
-                    reconstructed = combine(parts[:3])
-                    assert reconstructed == secret
-                    successful += 1
-                    if successful >= 3:  # Need at least 3 successes per size
-                        break
-                except ValueError as e:
-                    if "Duplicate part detected" in str(e):
-                        continue
-                    else:
-                        raise
-
-            assert successful >= 3, f"Could not get 3 successes for size {size}"
+            for attempt in range(3):  # Test 3 times per size
+                secret = rng.randbytes(size)
+                parts = split(secret, 5, 3, rng=Random(size * 1000 + attempt))
+                reconstructed = combine(parts[:3])
+                assert reconstructed == secret
 
     def test_pathological_inputs(self) -> None:
         """Test with pathological input patterns."""
@@ -182,10 +147,10 @@ class TestStressTesting:
             assert reconstructed == pattern
 
     def test_safe_threshold_boundary_stress(self) -> None:
-        """Test threshold boundary conditions with safe parameters."""
+        """Test threshold boundary conditions."""
         secret = b"threshold_boundary_test"
 
-        # Test smaller, safer threshold configurations
+        # Test various threshold configurations
         configs = [
             (2, 2),    # Minimum
             (3, 2),    # 2 of 3
@@ -194,29 +159,16 @@ class TestStressTesting:
         ]
 
         for parts_count, threshold in configs:
-            successful = False
-            for seed in range(10):  # Try multiple seeds
-                try:
-                    parts = split(secret, parts_count, threshold, rng=Random(seed * 10000))
+            parts = split(secret, parts_count, threshold, rng=Random(12345))
 
-                    # Test with exactly threshold parts
-                    reconstructed = combine(parts[:threshold])
-                    assert reconstructed == secret
+            # Test with exactly threshold parts
+            reconstructed = combine(parts[:threshold])
+            assert reconstructed == secret
 
-                    # Test with more than threshold parts
-                    if parts_count > threshold:
-                        reconstructed = combine(parts[:threshold + 1])
-                        assert reconstructed == secret
-
-                    successful = True
-                    break
-                except ValueError as e:
-                    if "Duplicate part detected" in str(e):
-                        continue
-                    else:
-                        raise
-
-            assert successful, f"Could not find working seed for config {parts_count}/{threshold}"
+            # Test with more than threshold parts
+            if parts_count > threshold:
+                reconstructed = combine(parts[:threshold + 1])
+                assert reconstructed == secret
 
     def test_deterministic_behavior_stress(self) -> None:
         """Test that deterministic RNG produces consistent results."""
@@ -235,29 +187,16 @@ class TestStressTesting:
         """Stress test data integrity with many operations."""
         original_secrets = []
         reconstructed_secrets = []
-        successful = 0
 
         # Generate secrets and process them
-        for i in range(200):  # Try more to get enough successes
-            try:
-                secret = f"integrity_test_{i}".encode('utf-8')
+        for i in range(50):
+            secret = f"integrity_test_{i}".encode('utf-8')
 
-                parts = split(secret, 5, 3, rng=Random(i * 5000))
-                reconstructed = combine(parts[:3])
+            parts = split(secret, 5, 3, rng=Random(i * 5000))
+            reconstructed = combine(parts[:3])
 
-                original_secrets.append(secret)
-                reconstructed_secrets.append(reconstructed)
-                successful += 1
-
-                if successful >= 50:  # Need at least 50 successes
-                    break
-            except ValueError as e:
-                if "Duplicate part detected" in str(e):
-                    continue
-                else:
-                    raise
-
-        assert successful >= 50, f"Only got {successful} successes"
+            original_secrets.append(secret)
+            reconstructed_secrets.append(reconstructed)
 
         # Verify all reconstructions are correct
         for orig, recon in zip(original_secrets, reconstructed_secrets):
@@ -268,7 +207,7 @@ class TestBenchmarks:
     """Performance benchmarks."""
 
     def test_safe_scalability_benchmark(self) -> None:
-        """Benchmark scalability with safe parameters."""
+        """Benchmark scalability."""
         secret = b"benchmark_secret" * 1000  # ~16KB
 
         configs = [
@@ -280,31 +219,19 @@ class TestBenchmarks:
 
         results = []
         for parts_count, threshold in configs:
-            successful = False
-            for seed in [12345, 54321, 98765]:
-                try:
-                    # Benchmark split
-                    start = time.time()
-                    parts = split(secret, parts_count, threshold, rng=Random(seed))
-                    split_time = time.time() - start
+            # Benchmark split
+            start = time.time()
+            parts = split(secret, parts_count, threshold, rng=Random(12345))
+            split_time = time.time() - start
 
-                    # Benchmark combine
-                    start = time.time()
-                    reconstructed = combine(parts[:threshold])
-                    combine_time = time.time() - start
+            # Benchmark combine
+            start = time.time()
+            reconstructed = combine(parts[:threshold])
+            combine_time = time.time() - start
 
-                    assert reconstructed == secret
-                    results.append((parts_count, threshold, split_time, combine_time))
-                    print(f"{parts_count}/{threshold}: split={split_time:.3f}s, combine={combine_time:.3f}s")
-                    successful = True
-                    break
-                except ValueError as e:
-                    if "Duplicate part detected" in str(e):
-                        continue
-                    else:
-                        raise
-
-            assert successful, f"Could not benchmark {parts_count}/{threshold}"
+            assert reconstructed == secret
+            results.append((parts_count, threshold, split_time, combine_time))
+            print(f"{parts_count}/{threshold}: split={split_time:.3f}s, combine={combine_time:.3f}s")
 
     def test_size_scalability_benchmark(self) -> None:
         """Benchmark with different secret sizes."""
