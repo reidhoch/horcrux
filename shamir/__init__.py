@@ -81,7 +81,7 @@ def split(
     # Generate a random list of unique x coordinates using Fisher-Yates shuffle.
     # This ensures no collisions by starting with unique values [0..254].
     # We add 1 when storing to get final x-coordinates in [1..255].
-    x_coords: list[int] = list(range(0, 255))
+    x_coords: list[int] = list(range(255))
     rng.shuffle(x_coords)
 
     # Allocate output array
