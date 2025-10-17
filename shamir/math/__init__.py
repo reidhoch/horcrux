@@ -4,7 +4,7 @@ import hmac
 from sys import byteorder
 from typing import Final
 
-__all__: list[str] = ["add", "div", "mul"]
+__all__: list[str] = ["add", "div", "inverse", "mul"]
 ZERO: Final[bytes] = b"\x00"
 
 
@@ -21,12 +21,13 @@ def add(a: int, b: int) -> int:
 def div(a: int, b: int) -> int:
     """Divides two numbers in GF(2^8)."""
     # Ensure that we return zero if a is zero, but don't leak timing info.
-    if bytes_eq(a.to_bytes(1, byteorder), ZERO):
-        return 0
     if bytes_eq(b.to_bytes(1, byteorder), ZERO):
         raise ZeroDivisionError
 
-    return mul(a, inverse(b))
+    result = mul(a, inverse(b))
+    # Mask result to 0 if a is 0, without branching on secrets
+    a_is_zero = int(bytes_eq(a.to_bytes(1, byteorder), ZERO))
+    return result * (1 - a_is_zero)
 
 
 def inverse(a: int) -> int:

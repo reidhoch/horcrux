@@ -1,6 +1,6 @@
 import pytest
 
-from shamir.math import add, div, mul
+from shamir.math import add, div, inverse, mul
 
 
 def test_add() -> None:
@@ -18,6 +18,10 @@ def test_div_zero() -> None:
     with pytest.raises(ZeroDivisionError):
         assert div(7, 0) == 0
 
+def test_inverse() -> None:
+    """Test that a * inverse(a) = 1 for all non-zero values in GF(2^8)."""
+    for a in range(1, 256):  # All non-zero values: 1 through 255
+        assert mul(a, inverse(a)) == 1
 
 def test_mul() -> None:
     assert mul(3, 7) == 9
