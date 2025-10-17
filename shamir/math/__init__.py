@@ -4,9 +4,7 @@ import hmac
 from sys import byteorder
 from typing import Final
 
-from .tables import EXP_TABLE, LOG_TABLE
-
-__all__: list[str] = ["EXP_TABLE", "LOG_TABLE", "add", "div", "mul"]
+__all__: list[str] = ["add", "div", "mul"]
 ZERO: Final[bytes] = b"\x00"
 
 
@@ -28,23 +26,41 @@ def div(a: int, b: int) -> int:
     if bytes_eq(b.to_bytes(1, byteorder), ZERO):
         raise ZeroDivisionError
 
-    log_a: int = LOG_TABLE[a]
-    log_b: int = LOG_TABLE[b]
-    diff: int = ((log_a - log_b) + 255) % 255
+    return mul(a, inverse(b))
 
-    return EXP_TABLE[diff]
+
+def inverse(a: int) -> int:
+    """Calculate the inverse of a number in GF(2^8)."""
+    b = mul(a, a)
+    c = mul(a, b)
+    b = mul(c, c)
+    b = mul(b, b)
+    c = mul(b, c)
+    b = mul(b, b)
+    b = mul(b, b)
+    b = mul(b, c)
+    b = mul(b, b)
+    b = mul(a, b)
+
+    return mul(b, b)
 
 
 def mul(a: int, b: int) -> int:
-    """Multiply two numbers in GF(2^8)."""
-    # Ensure that we return zero if a or b is zero, but don't leak timing info.
-    if bytes_eq(a.to_bytes(1, byteorder), ZERO) or bytes_eq(
-        b.to_bytes(1, byteorder),
-        ZERO,
-    ):
-        return 0
-    log_a: int = LOG_TABLE[a]
-    log_b: int = LOG_TABLE[b]
-    _sum: int = (log_a + log_b) % 255
+    """Multiply two numbers in GF(2^8) using shift-and-add method."""
+    result: int = 0
 
-    return EXP_TABLE[_sum]
+    # Process each bit of b from MSB to LSB
+    for i in range(7, -1, -1):
+        # Double the current result (left shift)
+        result = result << 1
+
+        # If the result overflowed, reduce modulo the polynomial
+        # XOR with 0x1B (the lower 8 bits of 0x11B)
+        if result & 0x100:  # Check if bit 8 is set
+            result ^= 0x11B
+
+        # If bit i of b is set, add a to the result (XOR in GF(2))
+        if (b >> i) & 1:
+            result ^= a
+
+    return result
