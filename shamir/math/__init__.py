@@ -9,7 +9,10 @@ ZERO: Final[bytes] = b"\x00"
 
 
 def bytes_eq(a: bytes, b: bytes) -> bool:
-    """Test byte equality in constant-time."""
+    """Test byte equality in constant-time.
+
+    Uses hmac.compare_digest to prevent timing attacks.
+    """
     return hmac.compare_digest(a, b)
 
 
@@ -19,7 +22,11 @@ def add(a: int, b: int) -> int:
 
 
 def div(a: int, b: int) -> int:
-    """Divides two numbers in GF(2^8)."""
+    """Divides two numbers in GF(2^8).
+
+    Returns 0 when a=0 (regardless of b).
+    Raises ZeroDivisionError when b=0.
+    """
     # Ensure that we return zero if a is zero, but don't leak timing info.
     if bytes_eq(b.to_bytes(1, byteorder), ZERO):
         raise ZeroDivisionError

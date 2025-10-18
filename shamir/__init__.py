@@ -20,38 +20,42 @@ except ImportError:
     except PackageNotFoundError:
         __version__ = "unknown"
 
-TWO: Final[int] = 2
 MAX_PARTS: Final[int] = 255
 MAX_THRESHOLD: Final[int] = 255
 
 
 def combine(parts: list[bytearray]) -> bytearray:
-    """Combine is used to reconstruct a secret once a threshold is reached."""
-    if len(parts) < TWO:
+    """Combine is used to reconstruct a secret once a threshold is reached.
+
+    WARNING: This function does not validate the threshold. Ensure you
+    provide at least the threshold number of parts used during split().
+    Fewer parts will produce an incorrect result without error.
+    """
+    if len(parts) < 2:  # noqa: PLR2004
         raise ValueError(Error.LESS_THAN_TWO_PARTS)
     first_part_len: int = len(parts[0])
-    if first_part_len < TWO:
+    if first_part_len < 2:  # noqa: PLR2004
         raise ValueError(Error.PARTS_MUST_BE_TWO_BYTES)
     for part in parts:
         if len(part) != first_part_len:
             raise ValueError(Error.ALL_PARTS_MUST_BE_SAME_LENGTH)
 
     secret: bytearray = bytearray(first_part_len - 1)
-    x_s: bytearray = bytearray(len(parts))
-    y_s: bytearray = bytearray(len(parts))
-    check_map: dict[int, bool] = {}
+    x_samples: bytearray = bytearray(len(parts))
+    y_samples: bytearray = bytearray(len(parts))
+    seen_samples: set[int] = set()
 
     for i, part in enumerate(parts):
         sample: int = part[first_part_len - 1]
-        if sample in check_map:
+        if sample in seen_samples:
             raise ValueError(Error.DUPLICATE_PART)
-        check_map[sample] = True
-        x_s[i] = sample
+        seen_samples.add(sample)
+        x_samples[i] = sample
 
-    for idx, _ in enumerate(secret):
+    for idx in range(len(secret)):
         for i, part in enumerate(parts):
-            y_s[i] = part[idx]
-        val: int = interpolate(x_s, y_s, 0)
+            y_samples[i] = part[idx]
+        val: int = interpolate(x_samples, y_samples, 0)
         secret[idx] = val
 
     return secret
@@ -61,7 +65,7 @@ def split(
     secret: bytes,
     parts: int,
     threshold: int,
-    rng: Random = SystemRandom(),  # noqa: B008
+    rng: Random | None = None,
 ) -> list[bytearray]:
     """Split an arbitrarily long secret into a number of parts.
 
@@ -71,24 +75,24 @@ def split(
         raise ValueError(Error.PARTS_CANNOT_BE_LESS_THAN_THRESHOLD)
     if parts > MAX_PARTS or threshold > MAX_THRESHOLD:
         raise ValueError(Error.PARTS_OR_THRESHOLD_CANNOT_EXCEED_255)
-    if threshold < TWO:
+    if threshold < 2:  # noqa: PLR2004
         raise ValueError(Error.THRESHOLD_MUST_BE_AT_LEAST_2)
     if len(secret) == 0:
         raise ValueError(Error.CANNOT_SPLIT_EMPTY_SECRET)
-    if not rng:
-        raise ValueError(Error.UNINITIALIZED_RNG)
+    if rng is None:
+        rng = SystemRandom()
 
     # Generate a random list of unique x coordinates using Fisher-Yates shuffle.
     # This ensures no collisions by starting with unique values [0..254].
     # We add 1 when storing to get final x-coordinates in [1..255].
-    x_coords: list[int] = list(range(255))
+    x_coords: list[int] = list(range(MAX_PARTS))
     rng.shuffle(x_coords)
 
     # Allocate output array
     output: list[bytearray] = [bytearray() for _ in range(parts)]
-    for idx in range(len(output)):
-        output[idx] = bytearray(len(secret) + 1)
-        output[idx][len(secret)] = x_coords[idx] + 1
+    for idx, part in enumerate(output):
+        part[:] = bytearray(len(secret) + 1)
+        part[len(secret)] = x_coords[idx] + 1
 
     for idx, val in enumerate(secret):
         # Construct a random polynomial for each byte of the secret.
