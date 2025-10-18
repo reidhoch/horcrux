@@ -7,6 +7,9 @@ title = "gitleaks config for horcrux"
 [allowlist]
 description = "Allowlist for test files containing mock secrets and example data"
 paths = [
+    '''AGENTS.md''',
+    '''CLAUDE.md''',
+    '''.github/copilot-instructions.md''',
     '''TEST_SUITE_DOCUMENTATION.md''',
     '''tests/.*''',
     '''examples/.*''',
