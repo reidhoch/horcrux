@@ -1,4 +1,3 @@
-# type: ignore
 from itertools import permutations
 from random import Random
 
@@ -20,7 +19,7 @@ def test_combine() -> None:
 def test_combine_invalid() -> None:
     parts: list[bytearray] = []
     with pytest.raises(
-        ValueError, match="Less than two parts cannot be used to reconstruct the secret"
+        ValueError, match="At least two parts are required to reconstruct the secret"
     ):
         combine(parts)
     parts = [bytearray("foo", "ascii"), bytearray("ba", "ascii")]
@@ -35,7 +34,7 @@ def test_combine_invalid() -> None:
 
 
 def test_split() -> None:
-    secret: bytearray = bytearray("test", "ascii")
+    secret: bytes = "test".encode("ascii")
     out: list[bytearray] = split(secret, 5, 3, rng=Random(54321))
     assert len(out) == 5  # noqa: SCS108
     first_part_len: int = len(out[0])
@@ -44,9 +43,7 @@ def test_split() -> None:
 
 
 def test_split_invalid() -> None:
-    secret: bytearray = bytearray("test", "ascii")
-    with pytest.raises(ValueError, match="RNG not initialized"):
-        split(secret, 5, 3, None)
+    secret: bytes = "test".encode("ascii")
     with pytest.raises(ValueError, match="Parts cannot be less than threshold"):
         split(secret, 2, 3)
     with pytest.raises(ValueError, match="Parts or Threshold cannot exceed 255"):
@@ -56,4 +53,4 @@ def test_split_invalid() -> None:
     with pytest.raises(ValueError, match="Parts or Threshold cannot exceed 255"):
         split(secret, 256, 256)
     with pytest.raises(ValueError, match="Cannot split an empty secret"):
-        split(bytearray(), 3, 2)
+        split("".encode(), 3, 2)

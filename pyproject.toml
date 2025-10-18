@@ -37,13 +37,14 @@ Changelog = "https://github.com/reidhoch/horcrux/releases"
 dev = [
   "mypy>=1.16",
   "pre-commit>=4.2",
+  "psutil>=7.1.0",
   "pytest>=8.4",
   "pytest-cov>=6.2,<8.0",
   "pytest-xdist[psutil]>=3.7",
   "ruff>=0.11.13,<0.15.0",
   "tox>=4.26",
-  "typer>=0.16,<0.20",
 ]
+examples = ["typer>=0.16,<0.20"]
 
 [tool.hatch.version]
 source = "vcs"
@@ -88,10 +89,6 @@ convention = "google"
 
 [tool.pytest.ini_options]
 minversion = "8.0"
-addopts = [
-  "--strict-markers",
-  "--strict-config",
-  "-ra",
-]
+addopts = ["--strict-markers", "--strict-config", "-ra"]
 testpaths = ["tests"]
 pythonpath = ["."]

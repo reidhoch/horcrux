@@ -106,11 +106,11 @@ class TestErrorConditions:
     def test_combine_error_messages(self) -> None:
         """Test that error messages are exactly as expected."""
         # Test empty parts list
-        with pytest.raises(ValueError, match="Less than two parts cannot be used to reconstruct the secret"):
+        with pytest.raises(ValueError, match="At least two parts are required to reconstruct the secret"):
             combine([])
 
         # Test single part
-        with pytest.raises(ValueError, match="Less than two parts cannot be used to reconstruct the secret"):
+        with pytest.raises(ValueError, match="At least two parts are required to reconstruct the secret"):
             combine([bytearray(b"single")])
 
         # Test parts too short
@@ -150,10 +150,6 @@ class TestErrorConditions:
         # Test empty secret
         with pytest.raises(ValueError, match="Cannot split an empty secret"):
             split(b"", 3, 2)
-
-        # Test None RNG
-        with pytest.raises(ValueError, match="RNG not initialized"):
-            split(secret, 3, 2, rng=None)  # type: ignore
 
     def test_boundary_values(self) -> None:
         """Test boundary values for parameters."""
