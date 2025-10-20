@@ -51,9 +51,8 @@ def combine(parts: list[bytearray]) -> bytearray:
     first_part_len: int = len(parts[0])
     if first_part_len < MIN_PART_LENGTH:
         raise ValueError(Error.PARTS_MUST_BE_TWO_BYTES)
-    for part in parts:
-        if len(part) != first_part_len:
-            raise ValueError(Error.ALL_PARTS_MUST_BE_SAME_LENGTH)
+    if not all(len(part) == first_part_len for part in parts):
+        raise ValueError(Error.ALL_PARTS_MUST_BE_SAME_LENGTH)
 
     secret: bytearray = bytearray(first_part_len - 1)
     x_samples: bytearray = bytearray(len(parts))
@@ -68,10 +67,8 @@ def combine(parts: list[bytearray]) -> bytearray:
         x_samples[i] = sample
 
     for idx in range(len(secret)):
-        for i, part in enumerate(parts):
-            y_samples[i] = part[idx]
-        val: int = interpolate(x_samples, y_samples, 0)
-        secret[idx] = val
+        y_samples[:] = [part[idx] for part in parts]
+        secret[idx] = interpolate(x_samples, y_samples, 0)
 
     return secret
 
@@ -116,11 +113,9 @@ def split(
         # Since we're using a field size of 256 we can only represent
         # a single byte as the intercept of the polynomial, so we have
         # to use a new polynomial for each byte.
-        poly: Polynomial = Polynomial(degree=(threshold - 1), intercept=val, rng=rng)
+        poly: Polynomial = Polynomial(degree=threshold - 1, intercept=val, rng=rng)
 
         # Generate (x, y) pairs
         for i in range(parts):
-            x: int = x_coords[i] + 1
-            y: int = poly.evaluate(x)
-            output[i][idx] = y
+            output[i][idx] = poly.evaluate(x_coords[i] + 1)
     return output

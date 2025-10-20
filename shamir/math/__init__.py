@@ -75,7 +75,7 @@ def mul(a: int, b: int) -> int:
     result: int = 0
 
     # Process each bit of b from MSB to LSB
-    for i in range(7, -1, -1):
+    for i in reversed(range(8)):
         # Double the current result (left shift)
         result = result << 1
 

@@ -197,7 +197,7 @@ Before approving, verify:
 
 ### Testing
 
-- **Standard**: `uv run pytest`
+- **Standard**: `uv run pytest -n auto`
 
 ## Critical Patterns
 
