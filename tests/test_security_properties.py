@@ -1,8 +1,10 @@
 """Property-based and security tests for Shamir's Secret Sharing."""
 
-import pytest
 from random import Random, SystemRandom
 from typing import List
+
+import pytest
+
 from shamir import combine, split
 
 
@@ -22,8 +24,8 @@ class TestSecurityProperties:
         # With threshold-1 parts, we should not be able to distinguish
         # which secret was used (this is a theoretical property)
         # Here we just verify that reconstruction fails gracefully
-        insufficient_parts1 = parts1[:threshold-1]
-        insufficient_parts2 = parts2[:threshold-1]
+        insufficient_parts1 = parts1[: threshold - 1]
+        insufficient_parts2 = parts2[: threshold - 1]
 
         # Both should have same number of parts
         assert len(insufficient_parts1) == len(insufficient_parts2)
@@ -83,6 +85,7 @@ class TestSecurityProperties:
 
         # Any 3 parts should work
         from itertools import combinations
+
         for combo in combinations(range(6), 3):
             selected_parts = [parts[i] for i in combo]
             reconstructed = combine(selected_parts)
@@ -106,11 +109,17 @@ class TestErrorConditions:
     def test_combine_error_messages(self) -> None:
         """Test that error messages are exactly as expected."""
         # Test empty parts list
-        with pytest.raises(ValueError, match="At least two parts are required to reconstruct the secret"):
+        with pytest.raises(
+            ValueError,
+            match="At least two parts are required to reconstruct the secret",
+        ):
             combine([])
 
         # Test single part
-        with pytest.raises(ValueError, match="At least two parts are required to reconstruct the secret"):
+        with pytest.raises(
+            ValueError,
+            match="At least two parts are required to reconstruct the secret",
+        ):
             combine([bytearray(b"single")])
 
         # Test parts too short
@@ -136,12 +145,12 @@ class TestErrorConditions:
             split(secret, 2, 3)
 
         # Test parts > 255
-        with pytest.raises(ValueError, match="Parts or Threshold cannot exceed 255"):
+        with pytest.raises(ValueError, match="Parts cannot exceed 255"):
             split(secret, 256, 3)
 
-        # Test threshold > 255 (but parts < threshold is checked first)
-        with pytest.raises(ValueError, match="Parts or Threshold cannot exceed 255"):
-            split(secret, 300, 256)  # Both exceed 255
+        # Test threshold > 255
+        with pytest.raises(ValueError, match="Threshold cannot exceed 255"):
+            split(secret, 254, 256)  # Both exceed 255
 
         # Test threshold < 2
         with pytest.raises(ValueError, match="Threshold must be at least 2"):

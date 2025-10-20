@@ -1,9 +1,11 @@
 """Mathematical property tests for the Shamir Secret Sharing implementation."""
 
-import pytest
 from random import Random
+
+import pytest
+
 from shamir import combine, split
-from shamir.math import add, mul, div
+from shamir.math import add, div, mul
 from shamir.utils import Polynomial, interpolate
 
 
@@ -102,6 +104,7 @@ class TestMathematicalProperties:
 
         # Any threshold number of parts should reconstruct the secret
         from itertools import combinations
+
         for combo in combinations(parts, threshold):
             reconstructed = combine(list(combo))
             assert reconstructed == secret
@@ -163,7 +166,7 @@ class TestMathematicalProperties:
         parts = split(secret, 6, threshold, rng=Random(789))
 
         # Test with threshold-1 parts
-        insufficient_parts = parts[:threshold-1]
+        insufficient_parts = parts[: threshold - 1]
 
         # While we can't easily test information-theoretic security,
         # we can verify that we need exactly the threshold

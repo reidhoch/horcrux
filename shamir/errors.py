@@ -11,6 +11,7 @@ class Error(StrEnum):
     ALL_PARTS_MUST_BE_SAME_LENGTH = "All parts must be the same length"
     DUPLICATE_PART = "Duplicate part detected"
     PARTS_CANNOT_BE_LESS_THAN_THRESHOLD = "Parts cannot be less than threshold"
-    PARTS_OR_THRESHOLD_CANNOT_EXCEED_255 = "Parts or Threshold cannot exceed 255"
+    PARTS_CANNOT_EXCEED_255 = "Parts cannot exceed 255"
+    THRESHOLD_CANNOT_EXCEED_255 = "Threshold cannot exceed 255"
     THRESHOLD_MUST_BE_AT_LEAST_2 = "Threshold must be at least 2"
     CANNOT_SPLIT_EMPTY_SECRET = "Cannot split an empty secret"  # noqa: S105

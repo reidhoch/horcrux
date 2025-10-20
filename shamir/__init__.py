@@ -20,6 +20,9 @@ except ImportError:  # pragma: no cover
     except PackageNotFoundError:
         __version__ = "unknown"
 
+MIN_PARTS: Final[int] = 2
+MIN_THRESHOLD: Final[int] = 2
+MIN_PART_LENGTH: Final[int] = 2
 MAX_PARTS: Final[int] = 255
 MAX_THRESHOLD: Final[int] = 255
 
@@ -27,14 +30,26 @@ MAX_THRESHOLD: Final[int] = 255
 def combine(parts: list[bytearray]) -> bytearray:
     """Combine is used to reconstruct a secret once a threshold is reached.
 
+    Args:
+        parts: List of secret parts to combine. Must all be the same length
+              and include the x-coordinate in the last byte.
+
+    Returns:
+        The reconstructed secret as a bytearray.
+
+    Raises:
+        ValueError: If parts list has fewer than 2 elements, if parts have
+                   mismatched lengths, if parts are too short, or if duplicate
+                   parts are detected.
+
     WARNING: This function does not validate the threshold. Ensure you
     provide at least the threshold number of parts used during split().
     Fewer parts will produce an incorrect result without error.
     """
-    if len(parts) < 2:  # noqa: PLR2004
+    if len(parts) < MIN_PARTS:
         raise ValueError(Error.LESS_THAN_TWO_PARTS)
     first_part_len: int = len(parts[0])
-    if first_part_len < 2:  # noqa: PLR2004
+    if first_part_len < MIN_PART_LENGTH:
         raise ValueError(Error.PARTS_MUST_BE_TWO_BYTES)
     for part in parts:
         if len(part) != first_part_len:
@@ -71,13 +86,15 @@ def split(
 
     A threshold of which are required to reconstruct the secret.
     """
+    if parts > MAX_PARTS:
+        raise ValueError(Error.PARTS_CANNOT_EXCEED_255)
+    if threshold > MAX_THRESHOLD:
+        raise ValueError(Error.THRESHOLD_CANNOT_EXCEED_255)
+    if threshold < MIN_THRESHOLD:
+        raise ValueError(Error.THRESHOLD_MUST_BE_AT_LEAST_2)
     if parts < threshold:
         raise ValueError(Error.PARTS_CANNOT_BE_LESS_THAN_THRESHOLD)
-    if parts > MAX_PARTS or threshold > MAX_THRESHOLD:
-        raise ValueError(Error.PARTS_OR_THRESHOLD_CANNOT_EXCEED_255)
-    if threshold < 2:  # noqa: PLR2004
-        raise ValueError(Error.THRESHOLD_MUST_BE_AT_LEAST_2)
-    if len(secret) == 0:
+    if not secret:
         raise ValueError(Error.CANNOT_SPLIT_EMPTY_SECRET)
     if rng is None:
         rng = SystemRandom()
@@ -89,10 +106,10 @@ def split(
     rng.shuffle(x_coords)
 
     # Allocate output array
-    output: list[bytearray] = [bytearray() for _ in range(parts)]
+    secret_len = len(secret)
+    output: list[bytearray] = [bytearray(secret_len + 1) for _ in range(parts)]
     for idx, part in enumerate(output):
-        part[:] = bytearray(len(secret) + 1)
-        part[len(secret)] = x_coords[idx] + 1
+        part[secret_len] = x_coords[idx] + 1
 
     for idx, val in enumerate(secret):
         # Construct a random polynomial for each byte of the secret.

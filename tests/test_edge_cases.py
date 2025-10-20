@@ -1,7 +1,9 @@
 """Edge case tests for Shamir's Secret Sharing implementation."""
 
-import pytest
 from random import Random
+
+import pytest
+
 from shamir import combine, split
 from shamir.errors import Error
 
@@ -53,7 +55,7 @@ class TestEdgeCases:
 
     def test_unicode_encoded_secret(self) -> None:
         """Test with unicode text encoded as bytes."""
-        secret = "Hello, 世界! 🌍".encode('utf-8')
+        secret = "Hello, 世界! 🌍".encode("utf-8")
         parts = split(secret, 5, 3, rng=Random(12345))
         reconstructed = combine(parts[:3])
         assert reconstructed == secret
@@ -79,7 +81,10 @@ class TestEdgeCases:
 
         # Test with different combinations of 5 parts
         import itertools
-        for combo in list(itertools.combinations(range(10), 5))[:10]:  # Test first 10 combinations
+
+        for combo in list(itertools.combinations(range(10), 5))[
+            :10
+        ]:  # Test first 10 combinations
             selected_parts = [parts[i] for i in combo]
             reconstructed = combine(selected_parts)
             assert reconstructed == secret
@@ -124,8 +129,9 @@ class TestEdgeCases:
                 x_coords = [part[-1] for part in parts]
 
                 # Verify all x-coordinates are unique
-                assert len(set(x_coords)) == len(x_coords), \
+                assert len(set(x_coords)) == len(x_coords), (
                     f"Collision detected with seed={seed}, num_parts={num_parts}"
+                )
 
                 # Verify all x-coordinates are in valid range [1, 255]
                 for x in x_coords:
