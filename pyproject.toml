@@ -35,6 +35,7 @@ Changelog = "https://github.com/reidhoch/horcrux/releases"
 
 [dependency-groups]
 dev = [
+  "hypothesis>=6.142.1",
   "mypy>=1.16",
   "pre-commit>=4.2",
   "psutil>=7.1.0",

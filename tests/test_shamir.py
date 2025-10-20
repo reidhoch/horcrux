@@ -22,27 +22,28 @@ def test_combine_invalid() -> None:
         ValueError, match="At least two parts are required to reconstruct the secret"
     ):
         combine(parts)
-    parts = [bytearray("foo", "ascii"), bytearray("ba", "ascii")]
+    parts = [bytearray(b"foo"), bytearray(b"ba")]
     with pytest.raises(ValueError, match="All parts must be the same length"):
         combine(parts)
-    parts = [bytearray("f", "ascii"), bytearray("b", "ascii")]
+    parts = [bytearray(b"f"), bytearray(b"b")]
     with pytest.raises(ValueError, match="Parts must be at least two bytes"):
         combine(parts)
-    parts = [bytearray("foo", "ascii"), bytearray("foo", "ascii")]
+    parts = [bytearray(b"foo"), bytearray(b"foo")]
     with pytest.raises(ValueError, match="Duplicate part detected"):
         combine(parts)
 
 
 def test_split() -> None:
-    secret: bytes = "test".encode("ascii")
+    secret: bytes = b"test"
     out: list[bytearray] = split(secret, 5, 3, rng=Random(54321))
     assert len(out) == 5  # noqa: SCS108
     first_part_len: int = len(out[0])
     for part in out:
         assert len(part) == first_part_len  # noqa: SCS108
 
+
 def test_split_rng_None() -> None:
-    secret: bytes = "test".encode("ascii")
+    secret: bytes = b"test"
     out: list[bytearray] = split(secret, 5, 3)
     assert len(out) == 5  # noqa: SCS108
     first_part_len: int = len(out[0])
@@ -51,14 +52,14 @@ def test_split_rng_None() -> None:
 
 
 def test_split_invalid() -> None:
-    secret: bytes = "test".encode("ascii")
+    secret: bytes = b"test"
     with pytest.raises(ValueError, match="Parts cannot be less than threshold"):
         split(secret, 2, 3)
-    with pytest.raises(ValueError, match="Parts or Threshold cannot exceed 255"):
+    with pytest.raises(ValueError, match="Parts cannot exceed 255"):
         split(secret, 1000, 3)
     with pytest.raises(ValueError, match="Threshold must be at least 2"):
         split(secret, 10, 1)
-    with pytest.raises(ValueError, match="Parts or Threshold cannot exceed 255"):
-        split(secret, 256, 256)
+    with pytest.raises(ValueError, match="Threshold cannot exceed 255"):
+        split(secret, 128, 256)
     with pytest.raises(ValueError, match="Cannot split an empty secret"):
         split("".encode(), 3, 2)

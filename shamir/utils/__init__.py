@@ -47,9 +47,9 @@ def interpolate(x_samples: bytearray, y_samples: bytearray, x: int) -> int:
         for j in range(limit):
             if i == j:
                 continue
-            num: int = add(x, x_samples[j])
-            den: int = add(x_samples[i], x_samples[j])
-            term: int = div(num, den)
+            numerator: int = add(x, x_samples[j])
+            denominator: int = add(x_samples[i], x_samples[j])
+            term: int = div(numerator, denominator)
             basis = mul(basis, term)
         group: int = mul(y_samples[i], basis)
         result = add(result, group)

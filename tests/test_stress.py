@@ -1,8 +1,10 @@
 """Simplified stress tests that avoid x-coordinate collision issues."""
 
-import pytest
 import time
 from random import Random, SystemRandom
+
+import pytest
+
 from shamir import combine, split
 
 
@@ -39,7 +41,9 @@ class TestStressTesting:
 
         assert reconstructed == secret
         assert len(parts) == 10
-        print(f"10 parts split: {split_duration:.2f}s, combine: {combine_duration:.2f}s")
+        print(
+            f"10 parts split: {split_duration:.2f}s, combine: {combine_duration:.2f}s"
+        )
 
     def test_repeated_operations_stress(self) -> None:
         """Test repeated split/combine operations."""
@@ -55,8 +59,9 @@ class TestStressTesting:
     def test_memory_efficiency(self) -> None:
         """Test memory usage with large data."""
         try:
-            import psutil
             import os
+
+            import psutil
 
             process = psutil.Process(os.getpid())
             initial_memory = process.memory_info().rss
@@ -76,14 +81,14 @@ class TestStressTesting:
 
             # Memory should be reasonable (not exact due to Python's memory management)
             memory_increase = after_combine_memory - initial_memory
-            print(f"Memory increase: {memory_increase / (1024*1024):.2f}MB")
+            print(f"Memory increase: {memory_increase / (1024 * 1024):.2f}MB")
         except ImportError:
             pytest.skip("psutil not available")
 
     def test_concurrent_operations(self) -> None:
         """Test concurrent split/combine operations."""
-        import threading
         import queue
+        import threading
         from typing import Tuple
 
         secret = b"concurrent_test"
@@ -135,9 +140,9 @@ class TestStressTesting:
     def test_pathological_inputs(self) -> None:
         """Test with pathological input patterns."""
         patterns = [
-            b"\x00" * 1000,           # All zeros
-            b"\xFF" * 1000,           # All ones
-            bytes(range(256)) * 4,     # Repeating pattern
+            b"\x00" * 1000,  # All zeros
+            b"\xff" * 1000,  # All ones
+            bytes(range(256)) * 4,  # Repeating pattern
             bytes(i % 256 for i in range(1000)),  # Modular pattern
         ]
 
@@ -152,10 +157,10 @@ class TestStressTesting:
 
         # Test various threshold configurations
         configs = [
-            (2, 2),    # Minimum
-            (3, 2),    # 2 of 3
-            (5, 3),    # 3 of 5
-            (7, 4),    # 4 of 7
+            (2, 2),  # Minimum
+            (3, 2),  # 2 of 3
+            (5, 3),  # 3 of 5
+            (7, 4),  # 4 of 7
         ]
 
         for parts_count, threshold in configs:
@@ -167,7 +172,7 @@ class TestStressTesting:
 
             # Test with more than threshold parts
             if parts_count > threshold:
-                reconstructed = combine(parts[:threshold + 1])
+                reconstructed = combine(parts[: threshold + 1])
                 assert reconstructed == secret
 
     def test_deterministic_behavior_stress(self) -> None:
@@ -190,7 +195,7 @@ class TestStressTesting:
 
         # Generate secrets and process them
         for i in range(50):
-            secret = f"integrity_test_{i}".encode('utf-8')
+            secret = f"integrity_test_{i}".encode("utf-8")
 
             parts = split(secret, 5, 3, rng=Random(i * 5000))
             reconstructed = combine(parts[:3])
@@ -231,15 +236,17 @@ class TestBenchmarks:
 
             assert reconstructed == secret
             results.append((parts_count, threshold, split_time, combine_time))
-            print(f"{parts_count}/{threshold}: split={split_time:.3f}s, combine={combine_time:.3f}s")
+            print(
+                f"{parts_count}/{threshold}: split={split_time:.3f}s, combine={combine_time:.3f}s"
+            )
 
     def test_size_scalability_benchmark(self) -> None:
         """Benchmark with different secret sizes."""
         sizes = [
-            1024,           # 1KB
-            10 * 1024,      # 10KB
-            100 * 1024,     # 100KB
-            1024 * 1024,    # 1MB
+            1024,  # 1KB
+            10 * 1024,  # 10KB
+            100 * 1024,  # 100KB
+            1024 * 1024,  # 1MB
         ]
 
         for size in sizes:
@@ -254,4 +261,6 @@ class TestBenchmarks:
             combine_time = time.time() - start
 
             assert reconstructed == secret
-            print(f"{size//1024}KB: split={split_time:.3f}s, combine={combine_time:.3f}s")
+            print(
+                f"{size // 1024}KB: split={split_time:.3f}s, combine={combine_time:.3f}s"
+            )
