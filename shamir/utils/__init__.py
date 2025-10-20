@@ -27,8 +27,6 @@ class Polynomial:
 
     def evaluate(self, x: int) -> int:
         """Return the value of the polynomial for the given x."""
-        if x == 0:
-            return self.coefficients[0]
         # Compute the polynomial using Horner's method.
         degree: int = len(self.coefficients) - 1
         out: int = self.coefficients[degree]
