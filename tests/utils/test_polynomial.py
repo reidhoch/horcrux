@@ -10,6 +10,9 @@ def test_random() -> None:
     poly: Polynomial = Polynomial(intercept=42, degree=2, rng=Random(123))
     assert poly.coefficients[0] == 42
 
+def test_rng_None() -> None:
+    poly: Polynomial = Polynomial(intercept=42, degree=2)
+    assert poly.coefficients[0] == 42
 
 def test_evaluate() -> None:
     poly: Polynomial = Polynomial(intercept=42, degree=1, rng=Random(123))
