@@ -11,7 +11,7 @@ __all__: list[str] = ["__version__", "combine", "split"]
 
 try:
     from shamir._version import __version__
-except ImportError:
+except ImportError:  # pragma: no cover
     # Version file is generated during build
     try:
         from importlib.metadata import PackageNotFoundError, version

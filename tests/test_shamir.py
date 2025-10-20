@@ -41,6 +41,14 @@ def test_split() -> None:
     for part in out:
         assert len(part) == first_part_len  # noqa: SCS108
 
+def test_split_rng_None() -> None:
+    secret: bytes = "test".encode("ascii")
+    out: list[bytearray] = split(secret, 5, 3)
+    assert len(out) == 5  # noqa: SCS108
+    first_part_len: int = len(out[0])
+    for part in out:
+        assert len(part) == first_part_len  # noqa: SCS108
+
 
 def test_split_invalid() -> None:
     secret: bytes = "test".encode("ascii")
