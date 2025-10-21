@@ -212,7 +212,7 @@ dev = [
     { name = "ruff", specifier = ">=0.11.13,<0.15.0" },
     { name = "tox", specifier = ">=4.26" },
 ]
-examples = [{ name = "typer", specifier = ">=0.16,<0.20" }]
+examples = [{ name = "typer", specifier = ">=0.16,<0.21" }]
 
 [[package]]
 name = "hypothesis"
