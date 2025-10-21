@@ -292,7 +292,7 @@ Examples demonstrate real-world usage patterns for users. They should be:
 
 ### Current Examples
 
-- `hello.py` - Basic string splitting/combining (shamir/**init**.py:10)
+- `hello.py` - Basic string splitting/combining (`shamir/__init__.py:10`)
 - `password.py` - Secure password sharing
 - `image.py` - Binary data handling
 
@@ -390,16 +390,16 @@ If something needs work, your review should help it get there through specific, 
 **Good Review Comments:**
 
 ❌ "Add more tests"
-✅ "The `div` method needs tests for the edge case where a=0 (shamir/math/**init**.py:42)"
+✅ "The `div` method needs tests for the edge case where a=0 (`shamir/math/__init__.py:42`)"
 
 ❌ "This API is confusing"
-✅ "The parameter name `data` is ambiguous - consider `secret` to match the `split()` function signature (shamir/**init**.py:77)"
+✅ "The parameter name `data` is ambiguous - consider `secret` to match the `split()` function signature (`shamir/__init_.py:77`)"
 
 ❌ "This could be better"
 ✅ "This approach works but creates a circular dependency. Consider moving the validation to `shamir/errors.py`"
 
 ❌ "Security concerns"
-✅ "This branches on secret byte values which could leak timing information. Use constant-time comparison (see shamir/utils/**init**.py:15 for pattern)"
+✅ "This branches on secret byte values which could leak timing information. Use constant-time comparison (see `shamir/utils/__init__.py:15` for pattern)"
 
 ### Review Checklist
 
