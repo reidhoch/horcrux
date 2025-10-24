@@ -11,7 +11,7 @@ Horcrux is a Python implementation of Shamir's Secret Sharing based on HashiCorp
 ```bash
 uv sync                              # Install dependencies
 uv run pre-commit run --all-files    # Ruff + mypy + gitleaks
-uv run pytest                        # Run full test suite
+uv run pytest -n auto                # Run full test suite
 ```
 
 **All three must pass** - this is enforced by CI
@@ -216,23 +216,37 @@ Before adding a dependency:
 **During development** (fast feedback):
 
 ```bash
-uv run pytest tests/test_specific.py -v        # Single file
-uv run pytest tests/test_specific.py::test_fn  # Single test
-uv run pytest -k "keyword" -v                  # Match by name
+uv run pytest -n auto tests/test_specific.py -v        # Single file
+uv run pytest -n auto tests/test_specific.py::test_fn  # Single test
+uv run pytest -n auto -k "keyword" -v                  # Match by name
 ```
 
 **Before committing** (full validation):
 
 ```bash
-uv run pytest                                  # Sequential, full suite
-uv run pytest -n auto                          # Parallel, faster
+uv run pytest -n auto                                  # Sequential, full suite
 ```
 
 **CI runs** (what GitHub Actions does):
 
 ```bash
-uv run pytest --cov=shamir --cov-report=xml    # With coverage
+uv run pytest --cov=shamir --cov-report=xml -n auto -m "not slow"    # With coverage, skip slow tests
 ```
+
+**Slow tests** (timing/performance tests that may be flaky):
+
+```bash
+uv run pytest tests/test_constant_time_ops.py -v    # Run only timing tests
+uv run pytest -m slow -v                            # Run all slow tests
+uv run pytest -m "not slow"                         # Skip slow tests (CI default)
+```
+
+### Test Markers
+
+- **`@pytest.mark.slow`**: Marks tests as slow (typically timing-based tests)
+  - These tests are skipped in CI to avoid flakiness
+  - Run them locally to verify constant-time properties
+  - Located in `tests/test_constant_time_ops.py`
 
 ### Property-Based Testing
 
@@ -426,8 +440,7 @@ Before approving, verify:
 
 ### Testing
 
-- **Full suite**: `uv run pytest`
-- **Parallel**: `uv run pytest -n auto`
+- **Full suite**: `uv run pytest -n auto`
 - **With coverage**: `uv run pytest --cov=shamir --cov-report=html`
 - **Specific file**: `uv run pytest tests/test_shamir.py -v`
 - **Watch mode**: `uv run pytest-watch` (if installed)

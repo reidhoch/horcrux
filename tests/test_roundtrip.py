@@ -6,13 +6,13 @@ from hypothesis import HealthCheck
 from shamir import combine, split
 
 
-@given(  # type: ignore[misc]
+@given(
     parts=st.integers(min_value=2, max_value=255),
     rng=st.randoms(note_method_calls=True),
     secret=st.binary(min_size=1),
     threshold=st.integers(min_value=2, max_value=255),
 )
-@settings(deadline=None, suppress_health_check=[HealthCheck.filter_too_much])  # type: ignore[misc]
+@settings(deadline=None, suppress_health_check=[HealthCheck.filter_too_much])
 def test_roundtrip_split_combine(
     parts: int,
     rng: Random,

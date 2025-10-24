@@ -1,7 +1,6 @@
 """Property-based and security tests for Shamir's Secret Sharing."""
 
-from random import Random, SystemRandom
-from typing import List
+from random import Random
 
 import pytest
 
@@ -12,35 +11,115 @@ class TestSecurityProperties:
     """Test security properties and invariants."""
 
     def test_information_theoretic_security(self) -> None:
-        """Test that insufficient parts reveal no information about the secret."""
-        secret1 = b"secret_message_1"
-        secret2 = b"secret_message_2"
+        """Test that insufficient parts reveal no information about the secret.
 
-        # Create parts for both secrets with same threshold
+        Key property: Given any k-1 shares, for ANY possible secret value,
+        there exists a valid kth share that would reconstruct to that secret.
+        This proves k-1 shares reveal zero information.
+
+        We demonstrate this by:
+        1. Taking k-1 shares from a polynomial for secret A
+        2. Computing what the kth share must be to reconstruct to target secret B
+        3. Verifying that reconstruction works for ANY target secret B
+        """
+
         threshold = 3
-        parts1 = split(secret1, 5, threshold, rng=Random(12345))
-        parts2 = split(secret2, 5, threshold, rng=Random(12345))
+        original_secret = b"X"  # Single byte: 0x58 (88 decimal)
 
-        # With threshold-1 parts, we should not be able to distinguish
-        # which secret was used (this is a theoretical property)
-        # Here we just verify that reconstruction fails gracefully
-        insufficient_parts1 = parts1[: threshold - 1]
-        insufficient_parts2 = parts2[: threshold - 1]
+        # Create shares for the original secret
+        parts = split(original_secret, 5, threshold, rng=Random(12345))
 
-        # Both should have same number of parts
-        assert len(insufficient_parts1) == len(insufficient_parts2)
+        # Take k-1 shares (insufficient for unique reconstruction)
+        insufficient_parts = parts[: threshold - 1]
+        assert len(insufficient_parts) == 2  # For threshold=3
 
-    def test_perfect_secrecy_property(self) -> None:
-        """Test that any subset of parts smaller than threshold is useless."""
-        secret = b"top_secret_data"
-        threshold = 4
-        parts = split(secret, 7, threshold, rng=Random(42))
+        # Extract x-coordinates from insufficient parts
+        x_coords_insufficient = [part[-1] for part in insufficient_parts]
 
-        # Test with various combinations less than threshold
-        for num_parts in range(1, threshold):
-            subset_parts = parts[:num_parts]
-            # Note: Current implementation doesn't enforce minimum threshold
-            # This test documents the expected behavior for a complete implementation
+        # Choose an x-coordinate for our "completing" share (must be different)
+        x_complete = 100
+        while x_complete in x_coords_insufficient:
+            x_complete = (x_complete + 1) % 256
+            if x_complete == 0:
+                x_complete = 1  # Skip 0, use 1-255
+
+        # Now demonstrate: for ANY target secret, we can compute a completing share
+        for target_byte in [0, 42, 88, 128, 200, 255]:
+            target_secret = bytes([target_byte])
+
+            # For each byte position in the secret, compute what y-value is needed
+            # at x_complete to make interpolation give us target_secret
+            #
+            # Mathematical insight: Given k-1 points and a target f(0) = target,
+            # we can solve for the kth point using the interpolation formula
+
+            # We'll compute the required y-value using Lagrange interpolation
+            # We want: interpolate([x1, x2, x_complete], [y1, y2, y_needed], 0) = target
+
+            # Get the y-values from insufficient parts (for first byte of secret)
+            y_insufficient = [part[0] for part in insufficient_parts]
+
+            # We need to solve for y_needed such that interpolation at x=0 gives target
+            # Using the property: L(0) = sum over i of (y_i * lagrange_basis_i(0))
+            #
+            # IMPORTANT: The Lagrange basis for point i when we have ALL k points is:
+            # l_i(0) = product over all j≠i of (0 - x_j) / (x_i - x_j)
+            #        = product over all j≠i of (-x_j) / (x_i - x_j)
+            # This includes the completing point in the product!
+
+            from shamir.math import add, div, mul
+
+            # Collect all x-coordinates (including the completing one)
+            all_x_coords = x_coords_insufficient + [x_complete]
+
+            # Compute sum of y_i * l_i(0) for the insufficient parts
+            # Note: l_i(0) now includes x_complete in the product
+            partial_sum = 0
+            for i, (x_i, y_i) in enumerate(
+                zip(x_coords_insufficient, y_insufficient)
+            ):
+                # Compute l_i(0) = product over ALL other x-coords (including x_complete)
+                lagrange_basis = 1
+                for x_j in all_x_coords:
+                    if x_i != x_j:
+                        # In GF(256), -x_j = x_j (since a + a = 0)
+                        numerator = x_j  # This is -x_j in GF(256)
+                        denominator = add(x_i, x_j)  # This is x_i - x_j in GF(256)
+                        lagrange_basis = mul(lagrange_basis, div(numerator, denominator))
+
+                partial_sum = add(partial_sum, mul(y_i, lagrange_basis))
+
+            # Now compute l_complete(0) for the completing share
+            # This is the product over all OTHER x-coordinates (the insufficient ones)
+            lagrange_basis_complete = 1
+            for x_j in x_coords_insufficient:
+                numerator = x_j  # -x_j in GF(256)
+                denominator = add(x_complete, x_j)  # x_complete - x_j
+                lagrange_basis_complete = mul(
+                    lagrange_basis_complete, div(numerator, denominator)
+                )
+
+            # Solve for y_needed: target = partial_sum + y_needed * lagrange_basis_complete
+            # => y_needed = (target - partial_sum) / lagrange_basis_complete
+            target_value = target_byte
+            difference = add(target_value, partial_sum)  # subtraction in GF(256)
+            y_needed = div(difference, lagrange_basis_complete)
+
+            # Construct the completing share with the computed y-value
+            completing_share = bytearray([y_needed, x_complete])
+
+            # Verify: combining insufficient parts + completing share reconstructs target
+            all_parts = insufficient_parts + [completing_share]
+            reconstructed = combine(all_parts)
+
+            assert reconstructed == target_secret, (
+                f"Failed to reconstruct target {target_byte} from insufficient parts. "
+                f"Got {reconstructed[0]} instead."
+            )
+
+        # Success! We've proven that the same k-1 shares can reconstruct to ANY
+        # secret by choosing an appropriate kth share. Therefore, k-1 shares
+        # reveal ZERO information about which secret was originally used.
 
     def test_randomness_quality(self) -> None:
         """Test that splits with same parameters but different RNG are different."""
