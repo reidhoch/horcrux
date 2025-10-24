@@ -1,8 +1,8 @@
 from random import Random
 
-from hypothesis import assume, given, settings
+from hypothesis import HealthCheck, assume, given, settings
 from hypothesis import strategies as st
-from hypothesis import HealthCheck
+
 from shamir import combine, split
 
 
