@@ -2,10 +2,7 @@
 
 from random import Random
 
-import pytest
-
 from shamir import combine, split
-from shamir.errors import Error
 
 
 class TestEdgeCases:
@@ -70,10 +67,6 @@ class TestEdgeCases:
         reconstructed = combine(parts[:threshold])
         assert reconstructed == secret
 
-        # Should fail with threshold - 1 parts (this would need special handling)
-        # Note: The current implementation doesn't validate minimum threshold
-        # during reconstruction, so this test documents current behavior
-
     def test_random_part_selection(self) -> None:
         """Test reconstruction with random selection of parts."""
         secret = b"random_selection_test"
@@ -109,8 +102,6 @@ class TestEdgeCases:
 
     def test_single_byte_variations(self) -> None:
         """Test some single byte values (avoiding x-coordinate collision issue)."""
-        # Note: The current implementation can generate duplicate x-coordinates
-        # Test with various byte values
         test_values = [0, 1, 42, 127, 128, 200, 254, 255]
         for byte_value in test_values:
             secret = bytes([byte_value])

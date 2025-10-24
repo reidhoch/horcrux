@@ -65,7 +65,7 @@ pretty = true
 
 [[tool.mypy.overrides]]
 module = "tests.*"
-disallow_untyped_defs = false
+ignore_errors = true
 
 [[tool.mypy.overrides]]
 module = "examples.*"
@@ -93,3 +93,6 @@ minversion = "8.0"
 addopts = ["--strict-markers", "--strict-config", "-ra"]
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = [
+  "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]

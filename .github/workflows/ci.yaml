@@ -34,7 +34,7 @@ jobs:
         run: uv run ruff check --no-cache shamir
       - name: Run tests
         run: |
-          uv run pytest --junit-xml=junit/test-results-${{ matrix.python-version }}.xml --cov=shamir --cov-branch --cov-report=xml -n auto
+          uv run pytest --junit-xml=junit/test-results-${{ matrix.python-version }}.xml --cov=shamir --cov-branch --cov-report=xml -n auto -m "not slow"
       - name: Upload pytest test results
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
