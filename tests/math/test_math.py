@@ -1,4 +1,5 @@
 import pytest
+
 from shamir.math import add, div, inverse, mul
 
 

@@ -1,6 +1,7 @@
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
+
 from shamir.math import add, div, inverse, mul
 
 

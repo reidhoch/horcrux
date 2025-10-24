@@ -4,9 +4,9 @@ from random import Random
 
 from hypothesis import given
 from hypothesis import strategies as st
+
 from shamir.math import add, mul
 from shamir.utils import Polynomial, interpolate
-
 
 # Polynomial Evaluation Properties
 
