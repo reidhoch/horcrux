@@ -35,8 +35,8 @@ uv run pytest -n auto                # Run full test suite
 
 The public API (from `shamir/__init__.py`) exports:
 
-- `split(secret, parts, threshold, rng=None) -> list[bytearray]` - Split secret into parts
-- `combine(parts) -> bytearray` - Reconstruct secret from parts
+- `split(secret, parts, threshold, rng=None, version=None) -> list[bytearray]` - Split secret into parts
+- `combine(parts) -> bytearray` - Reconstruct secret from parts (auto-detects version)
 - `__version__` - Package version string
 
 ### Design Principles
@@ -69,6 +69,76 @@ Before adding new public functions:
 - **Byte-by-byte processing**: Each secret byte has a separate polynomial (field limitation)
 - **Constant-time operations**: Used to prevent timing attacks
 - **No branching on secrets**: Avoid conditional logic based on secret values
+
+## Share Format Versioning
+
+### Version 1 (Current Default)
+
+**Format**: `[version_byte, y_values..., x_coordinate]`
+
+- **Version byte**: `0x01` (first byte)
+- **Y-values**: Secret share data (one byte per secret byte)
+- **X-coordinate**: Share identifier (last byte, range 1-255)
+- **Length**: `secret_length + 2` bytes
+
+### Version 0 (Legacy)
+
+**Format**: `[y_values..., x_coordinate]`
+
+- **No version byte**: Maintains backward compatibility
+- **Y-values**: Secret share data (one byte per secret byte)
+- **X-coordinate**: Share identifier (last byte, range 1-255)
+- **Length**: `secret_length + 1` bytes
+
+### Version Detection
+
+The `combine()` function automatically detects share version:
+
+1. **Version 1 detection**: If first byte is `0x01`, treats as version 1
+2. **Legacy detection**: Otherwise, assumes version 0 (legacy format)
+3. **Validation**: All shares must have the same version (no mixing)
+
+**Important**: There's a 1/256 chance a legacy share's first y-value is `0x01`, causing false positive version 1 detection. This is acceptable because:
+
+- All shares in a set have the same format
+- If first share is correctly detected, all will be
+- Users can explicitly specify `version=0` if needed
+
+### Creating Versioned Shares
+
+```python
+# Default: Create version 1 shares (recommended)
+parts = split(secret, 5, 3)  # version defaults to 1
+
+# Legacy: Create version 0 shares (backward compatibility)
+parts_legacy = split(secret, 5, 3, version=0)
+
+# Both can be reconstructed automatically
+combine(parts)         # Auto-detects version 1
+combine(parts_legacy)  # Auto-detects version 0
+```
+
+### When to Use Version 0
+
+- **Interoperability**: When working with systems that expect legacy format
+- **Storage constraints**: When the extra byte per share matters
+- **Testing**: When verifying backward compatibility
+
+### Future Versions
+
+Version 2+ may include:
+
+- Share metadata (threshold, part index)
+- Checksums for error detection
+- Additional security features
+
+To add a new version:
+
+1. Define `SHARE_VERSION_X` constant
+2. Update `_detect_share_version()` logic
+3. Add format handling in `split()` and `combine()`
+4. Update `CURRENT_SHARE_VERSION` constant
+5. Add comprehensive tests
 
 ## Code Conventions
 
@@ -284,15 +354,24 @@ Use Hypothesis for testing mathematical properties:
 - **X-coordinates**: Stored as 1-255 (not 0-254)
   - `x_coords[i] + 1` when storing
   - Used directly when retrieving (already offset)
-- **Array indexing**: Secret length vs part length differ by 1
-  - Parts have extra byte for x-coordinate
-  - `part[len(part) - 1]` is x-coordinate
+- **Array indexing**: Secret length vs part length differ by 1 or 2
+  - Version 1 parts: `secret_length + 2` (version + y-values + x-coordinate)
+  - Version 0 parts: `secret_length + 1` (y-values + x-coordinate)
+  - X-coordinate is always last byte: `part[len(part) - 1]`
+  - Y-values start at index 1 for version 1, index 0 for version 0
 
 ### Byte Order
 
-- **Big-endian by default**: First byte of secret is first byte of parts
+- **Version 1 format**: `[version=0x01, y_0, y_1, ..., y_n, x_coord]`
+  - First byte is version identifier
+  - Y-values follow in order (first secret byte → first y-value)
+  - X-coordinate is last byte
+- **Version 0 format**: `[y_0, y_1, ..., y_n, x_coord]`
+  - No version byte
+  - Y-values start at index 0
+  - X-coordinate is last byte
 - **No padding**: Secret length preserved exactly (unlike some implementations)
-- **X-coordinate position**: Always last byte of each part
+- **Big-endian by default**: First byte of secret maps to first y-value
 
 ## Examples Directory
 

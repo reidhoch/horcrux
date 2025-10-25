@@ -57,7 +57,10 @@ class TestSecurityProperties:
             # We want: interpolate([x1, x2, x_complete], [y1, y2, y_needed], 0) = target
 
             # Get the y-values from insufficient parts (for first byte of secret)
-            y_insufficient = [part[0] for part in insufficient_parts]
+            # Note: Version 1 format is [version, y_values..., x_coord]
+            y_insufficient = [
+                part[1] for part in insufficient_parts
+            ]  # Skip version byte
 
             # We need to solve for y_needed such that interpolation at x=0 gives target
             # Using the property: L(0) = sum over i of (y_i * lagrange_basis_i(0))
@@ -75,9 +78,7 @@ class TestSecurityProperties:
             # Compute sum of y_i * l_i(0) for the insufficient parts
             # Note: l_i(0) now includes x_complete in the product
             partial_sum = 0
-            for i, (x_i, y_i) in enumerate(
-                zip(x_coords_insufficient, y_insufficient)
-            ):
+            for i, (x_i, y_i) in enumerate(zip(x_coords_insufficient, y_insufficient)):
                 # Compute l_i(0) = product over ALL other x-coords (including x_complete)
                 lagrange_basis = 1
                 for x_j in all_x_coords:
@@ -85,7 +86,9 @@ class TestSecurityProperties:
                         # In GF(256), -x_j = x_j (since a + a = 0)
                         numerator = x_j  # This is -x_j in GF(256)
                         denominator = add(x_i, x_j)  # This is x_i - x_j in GF(256)
-                        lagrange_basis = mul(lagrange_basis, div(numerator, denominator))
+                        lagrange_basis = mul(
+                            lagrange_basis, div(numerator, denominator)
+                        )
 
                 partial_sum = add(partial_sum, mul(y_i, lagrange_basis))
 
@@ -106,7 +109,8 @@ class TestSecurityProperties:
             y_needed = div(difference, lagrange_basis_complete)
 
             # Construct the completing share with the computed y-value
-            completing_share = bytearray([y_needed, x_complete])
+            # Version 1 format: [version, y_value, x_coord]
+            completing_share = bytearray([1, y_needed, x_complete])
 
             # Verify: combining insufficient parts + completing share reconstructs target
             all_parts = insufficient_parts + [completing_share]
@@ -178,8 +182,8 @@ class TestSecurityProperties:
             parts = split(secret, 5, 3, rng=Random(456))
             assert len(parts) == 5  # Should always be the requested number
             for part in parts:
-                # Part length should be secret length + 1 (for the x-coordinate)
-                assert len(part) == len(secret) + 1
+                # Part length should be secret length + 2 (version + y-values + x-coordinate)
+                assert len(part) == len(secret) + 2
 
 
 class TestErrorConditions:

@@ -160,9 +160,9 @@ class TestConstantTimeOperations:
     @pytest.mark.parametrize(
         "secret_pair",
         [
-            (b"\x00" * 100, b"\xFF" * 100),  # Opposite extremes
+            (b"\x00" * 100, b"\xff" * 100),  # Opposite extremes
             (b"\x00" * 100, b"\x01" * 100),  # Minimal difference
-            (b"\x55" * 100, b"\xAA" * 100),  # Alternating patterns
+            (b"\x55" * 100, b"\xaa" * 100),  # Alternating patterns
         ],
     )
     def test_combine_timing_similar_for_different_secrets(
@@ -333,8 +333,7 @@ class TestGF256ConstantTime:
 
             # Addition should be very fast and consistent
             assert ratio < 2.0, (
-                f"GF(256) add timing varies by operands: {medians}. "
-                f"Ratio: {ratio:.3f}"
+                f"GF(256) add timing varies by operands: {medians}. Ratio: {ratio:.3f}"
             )
 
 
@@ -458,12 +457,14 @@ class TestTimingAttackResistance:
             timings_by_weight[name] = timings
 
         # Compare medians
-        medians = {name: statistics.median(times) for name, times in timings_by_weight.items()}
+        medians = {
+            name: statistics.median(times) for name, times in timings_by_weight.items()
+        }
 
         median_values = list(medians.values())
         ratio = max(median_values) / min(median_values)
 
         # Timing shouldn't depend on Hamming weight
         assert ratio < 1.3, (
-            f"Timing correlates with Hamming weight: {medians}. " f"Ratio: {ratio:.3f}"
+            f"Timing correlates with Hamming weight: {medians}. Ratio: {ratio:.3f}"
         )
