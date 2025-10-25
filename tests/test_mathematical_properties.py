@@ -94,9 +94,9 @@ class TestMathematicalProperties:
         threshold = 3
         parts = split(secret, 5, threshold, rng=Random(42))
 
-        # Each part should have the secret length + 1 byte
+        # Each part should have the secret length + 2 bytes (version + y-values + x_coord)
         for part in parts:
-            assert len(part) == len(secret) + 1
+            assert len(part) == len(secret) + 2
 
         # The last byte should be the x-coordinate (should be unique)
         x_coords = [part[-1] for part in parts]
@@ -146,12 +146,14 @@ class TestMathematicalProperties:
         parts1 = split(secret1, 3, 2, rng=rng1)
         parts2 = split(secret2, 3, 2, rng=rng2)
 
-        # XOR corresponding parts (except x-coordinate)
+        # XOR corresponding parts (except version byte and x-coordinate)
+        # Note: Version 1 format is [version, y_values..., x_coord]
         combined_parts = []
         for i in range(3):
-            part = bytearray(2)  # secret length + 1
-            part[0] = parts1[i][0] ^ parts2[i][0]  # XOR the secret byte
-            part[1] = parts1[i][1]  # Keep same x-coordinate
+            part = bytearray(3)  # version + secret length + x_coord
+            part[0] = 1  # Version byte
+            part[1] = parts1[i][1] ^ parts2[i][1]  # XOR the y-values (skip version)
+            part[2] = parts1[i][2]  # Keep same x-coordinate
             combined_parts.append(part)
 
         # Reconstruct should give XOR of original secrets

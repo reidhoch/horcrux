@@ -83,9 +83,7 @@ class TestDealerHonesty:
 
         # Test 5 random threshold-sized subsets
         all_subsets = list(itertools.combinations(parts, threshold))
-        sampled_subsets = Random(101112).sample(
-            all_subsets, min(5, len(all_subsets))
-        )
+        sampled_subsets = Random(101112).sample(all_subsets, min(5, len(all_subsets)))
 
         for subset in sampled_subsets:
             reconstructed = combine(list(subset))
@@ -135,8 +133,9 @@ class TestDealerHonesty:
         parts = split(secret, num_parts, threshold, rng=Random(999))
 
         # Extract x and y coordinates for the first byte
+        # Note: Version 1 format is [version, y_values..., x_coord]
         x_coords = [part[-1] for part in parts]
-        y_coords = [part[0] for part in parts]
+        y_coords = [part[1] for part in parts]  # Skip version byte at index 0
 
         # Take first threshold points to define the polynomial
         defining_x = x_coords[:threshold]
@@ -184,8 +183,9 @@ class TestDealerHonesty:
         parts = split(secret, num_parts, threshold, rng=Random(2468))
 
         # Extract coordinates for first byte
+        # Note: Version 1 format is [version, y_values..., x_coord]
         x_coords = [part[-1] for part in parts]
-        y_coords = [part[0] for part in parts]
+        y_coords = [part[1] for part in parts]  # Skip version byte at index 0
 
         # Use first threshold shares to interpolate f(0)
         x_defining = x_coords[:threshold]
