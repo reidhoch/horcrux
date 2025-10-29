@@ -140,7 +140,7 @@ class WalletBackup:
         locations = self._get_storage_locations()
 
         # Generate files for each share
-        share_files:list[Path] = []
+        share_files: list[Path] = []
         for i, (share, location) in enumerate(zip(shares, locations), 1):
             filepath = self._create_share_file(
                 share_number=i,
