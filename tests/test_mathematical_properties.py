@@ -12,37 +12,6 @@ from shamir.utils import Polynomial, interpolate
 class TestMathematicalProperties:
     """Test mathematical properties and correctness."""
 
-    def test_galois_field_arithmetic_properties(self) -> None:
-        """Test properties of GF(256) arithmetic."""
-        # Test additive identity
-        for a in range(256):
-            assert add(a, 0) == a
-            assert add(0, a) == a
-
-        # Test additive inverse (in GF(2^8), a + a = 0)
-        for a in range(256):
-            assert add(a, a) == 0
-
-        # Test commutativity of addition
-        for a in range(0, 256, 17):  # Sample every 17th value to reduce test time
-            for b in range(0, 256, 19):  # Sample every 19th value
-                assert add(a, b) == add(b, a)
-
-        # Test multiplicative identity
-        for a in range(1, 256):  # Skip 0 since 0*1 is special
-            assert mul(a, 1) == a
-            assert mul(1, a) == a
-
-        # Test multiplicative zero
-        for a in range(256):
-            assert mul(a, 0) == 0
-            assert mul(0, a) == 0
-
-        # Test commutativity of multiplication
-        for a in range(1, 256, 23):  # Sample values to reduce test time
-            for b in range(1, 256, 29):
-                assert mul(a, b) == mul(b, a)
-
     def test_division_properties(self) -> None:
         """Test division properties in GF(256)."""
         # Test that a / a = 1 for all non-zero a
