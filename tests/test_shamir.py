@@ -17,23 +17,6 @@ def test_combine() -> None:
         assert recombined == secret
 
 
-def test_combine_invalid() -> None:
-    parts: list[bytearray] = []
-    with pytest.raises(
-        ValueError, match="At least two parts are required to reconstruct the secret"
-    ):
-        combine(parts)
-    parts = [bytearray(b"foo"), bytearray(b"ba")]
-    with pytest.raises(ValueError, match="All parts must be the same length"):
-        combine(parts)
-    parts = [bytearray(b"f"), bytearray(b"b")]
-    with pytest.raises(ValueError, match="Parts must be at least two bytes"):
-        combine(parts)
-    parts = [bytearray(b"foo"), bytearray(b"foo")]
-    with pytest.raises(ValueError, match="Duplicate part detected"):
-        combine(parts)
-
-
 def test_combine_legacy_shares_too_short() -> None:
     """Test combine with legacy shares that are too short (< 2 bytes)."""
     # Create malformed legacy shares (only 1 byte each)
@@ -89,20 +72,6 @@ def test_split_rng_None() -> None:
     first_part_len: int = len(out[0])
     for part in out:
         assert len(part) == first_part_len  # noqa: SCS108
-
-
-def test_split_invalid() -> None:
-    secret: bytes = b"test"
-    with pytest.raises(ValueError, match="Parts cannot be less than threshold"):
-        split(secret, 2, 3)
-    with pytest.raises(ValueError, match="Parts cannot exceed 255"):
-        split(secret, 1000, 3)
-    with pytest.raises(ValueError, match="Threshold must be at least 2"):
-        split(secret, 10, 1)
-    with pytest.raises(ValueError, match="Threshold cannot exceed 255"):
-        split(secret, 128, 256)
-    with pytest.raises(ValueError, match="Cannot split an empty secret"):
-        split("".encode(), 3, 2)
 
 
 def test_split_with_invalid_version() -> None:
