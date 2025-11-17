@@ -109,16 +109,16 @@ class TestMathBenchmarks:
         """Test division is closed (in GF(2^8), 0 <= sum <= 255)."""
         a = rng.randrange(0, 256)
         b = rng.randrange(1, 256)
-        sum = benchmark(lambda: div(a, b))
-        assert 0 <= sum <= 255
+        quotient = benchmark(lambda: div(a, b))
+        assert 0 <= quotient <= 255
 
     @pytest.mark.benchmark
     def test_mul(self, benchmark: Any, rng: Random) -> None:
         """Test multiplication is closed (in GF(2^8), 0 <= sum <= 255)."""
         a = rng.randrange(0, 256)
         b = rng.randrange(0, 256)
-        sum = benchmark(lambda: mul(a, b))
-        assert 0 <= sum <= 255
+        product = benchmark(lambda: mul(a, b))
+        assert 0 <= product <= 255
 
     @pytest.mark.benchmark
     def test_inverse(self, benchmark: Any, rng: Random) -> None:
