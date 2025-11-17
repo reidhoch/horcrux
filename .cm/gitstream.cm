@@ -241,8 +241,10 @@ automations:
           label: 'trivial'
           color: '36A853'
       - action: approve@v1
+      - action: add-comment@v1
         args:
-          comment: "Auto-approved: trivial formatting or documentation change"
+          comment: |
+            "Auto-approved: trivial formatting or documentation change"
 
   # ============================================================================
   # SAFE CHANGES (LABEL ONLY, NO AUTO-APPROVE)
