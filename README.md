@@ -304,6 +304,24 @@ uv run pytest tests/test_shamir.py -v
 uv run pytest -n auto
 ```
 
+### Running Benchmarks
+
+```bash
+# Run benchmarks with pytest-codspeed
+uv run pytest tests/test_benchmarks.py --codspeed
+
+# Run benchmarks only (skip regular tests)
+uv run pytest -m benchmark --codspeed
+
+# Run regular tests without benchmarks
+uv run pytest -m "not benchmark"
+```
+
+Benchmarks track performance of core operations (split/combine) across different:
+- Secret sizes (16 bytes to 1 MB)
+- Share configurations (various parts/threshold combinations)
+- Share formats (version 0 vs version 1)
+
 ### Code Quality
 
 ```bash

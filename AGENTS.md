@@ -311,12 +311,25 @@ uv run pytest -m slow -v                            # Run all slow tests
 uv run pytest -m "not slow"                         # Skip slow tests (CI default)
 ```
 
+**Benchmarks** (performance tracking with pytest-codspeed):
+
+```bash
+uv run pytest tests/test_benchmarks.py --codspeed   # Run benchmarks
+uv run pytest -m benchmark --codspeed               # Run all benchmark tests
+uv run pytest -m "not benchmark"                    # Skip benchmark tests
+```
+
 ### Test Markers
 
 - **`@pytest.mark.slow`**: Marks tests as slow (typically timing-based tests)
   - These tests are skipped in CI to avoid flakiness
   - Run them locally to verify constant-time properties
   - Located in `tests/test_constant_time_ops.py`
+
+- **`@pytest.mark.benchmark`**: Marks tests as benchmarks (performance tracking)
+  - Use pytest-codspeed to track performance over time
+  - Benchmarks cover split/combine operations with various configurations
+  - Located in `tests/test_benchmarks.py`
 
 ### Property-Based Testing
 
