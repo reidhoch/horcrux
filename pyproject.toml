@@ -40,6 +40,7 @@ dev = [
   "pre-commit>=4.2",
   "psutil>=7.1.0",
   "pytest>=8.4",
+  "pytest-codspeed>=4.0",
   "pytest-cov>=6.2,<8.0",
   "pytest-xdist[psutil]>=3.7",
   "ruff>=0.11.13,<0.15.0",
@@ -95,4 +96,5 @@ testpaths = ["tests"]
 pythonpath = ["."]
 markers = [
   "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+  "benchmark: marks tests as benchmarks (deselect with '-m \"not benchmark\"')",
 ]

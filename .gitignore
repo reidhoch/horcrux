@@ -253,6 +253,8 @@ Thumbs.db
 # profiling data
 .prof
 
+# CodSpeed
+.codspeed/
 
 ### VirtualEnv ###
 # Virtualenv
