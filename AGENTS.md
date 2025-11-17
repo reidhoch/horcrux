@@ -328,8 +328,10 @@ uv run pytest -m "not benchmark"                    # Skip benchmark tests
 
 - **`@pytest.mark.benchmark`**: Marks tests as benchmarks (performance tracking)
   - Use pytest-codspeed to track performance over time
-  - Benchmarks cover split/combine operations with various configurations
+  - Benchmarks cover split/combine/roundtrip operations across multiple sizes (16B, 256B, 16KB)
+  - Also benchmarks low-level GF(256) math operations (add, mul, div, inverse)
   - Located in `tests/test_benchmarks.py`
+  - 25 total benchmark tests (21 parameterized + 4 math primitives)
 
 ### Property-Based Testing
 
