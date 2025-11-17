@@ -317,10 +317,12 @@ uv run pytest -m benchmark --codspeed
 uv run pytest -m "not benchmark"
 ```
 
-Benchmarks track performance of core operations (split/combine) across different:
-- Secret sizes (16 bytes to 1 MB)
-- Share configurations (various parts/threshold combinations)
-- Share formats (version 0 vs version 1)
+Benchmarks track performance of core operations across different configurations:
+
+- **Split/Combine operations**: 16 bytes, 256 bytes, and 16 KB secret sizes
+- **Share configurations**: Standard (5 parts/3 threshold), high threshold (255 parts/128 threshold), many parts (255 parts/3 threshold)
+- **Roundtrip operations**: Complete split+combine cycles
+- **GF(256) math primitives**: Addition, multiplication, division, and inverse operations
 
 ### Code Quality
 
