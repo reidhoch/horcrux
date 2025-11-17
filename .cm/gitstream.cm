@@ -1,69 +1,298 @@
 # -*- mode: yaml -*-
+# Horcrux gitStream Configuration
+# Automated PR labeling, security checks, and workflow automation
+# Documentation: https://docs.gitstream.cm
 
 manifest:
   version: 1.0
 
-# The `automations` section includes a list of automation that applies
-# to the repository in which gitStream is installed. Each automation has an
-# `if` key with a list of the necessary assertions, as well as a `run` key with a
-# list of all actions. All the listed assertions need to pass in order
-# for the following actions to be executed (there is AND relation between conditions).
-
-# Each automation under the `automations` section is independent of the others.
-# Every time a PR is opened or changed, the automation's conditions are evaluated (the `if`).
-# The actions under `run` are executed one by one if all the conditions pass.
-
-# Conditions consists of an expression, which are wrapped with double curly braces, and
-# includes a context variable like `files` and filter functions like `length`. Filters
-# functions are essentially functions that can be applied to context variables. They are
-# called with a pipe operator (|) and can take arguments. Read more on https://docs.gitstream.cm
-
 automations:
-  # This is the name of the review automation. You can use whatever name, a meaningful name
-  # will help to identify it in the future. Each automation name in this file should be unique.
+  # ============================================================================
+  # REVIEW TIME ESTIMATION
+  # ============================================================================
   estimated_time_to_review:
     if:
       - true
     run:
-      - action : add-label@v1
+      - action: add-label@v1
         args:
           label: "{{ calc.etr }} min review"
           color: {{ 'E94637' if (calc.etr >= 20) else ('FBBD10' if (calc.etr >= 5) else '36A853') }}
 
-  safe_changes:
-    # The `if` key has a list of conditions, each condition is specified as a Jinja expression
-    # in a double curly braces. Expressions are evaluated by gitStream on a PR when triggered.
-    if:
-      # Given the PR code changes, check that only formatting changes were made
-      - {{ is.formatting or is.docs or is.tests }}
-    # `run` key has a list of actions, which are executed one by one whenever the automation
-    # conditions are met.
-    run:
-      # When the changes are validated as formatting only, you can help to speed up the review
-      # by adding a label that marks it accordingly.
-      - action: add-label@v1
-        args:
-          label: 'safe-changes'
-      # You can uncomment the following action to get gitStream can even automatically approve
-      # such PRs to save reviewers time for such changes.
-      - action: approve@v1
-  approve_small:
+  # ============================================================================
+  # SIZE LABELING
+  # ============================================================================
+  label_size_small:
     if:
       - {{ size.is.small }}
     run:
-      - action : add-label@v1
+      - action: add-label@v1
         args:
-          label: "small"
+          label: 'small'
+          color: '36A853'
+
+  label_size_medium:
+    if:
+      - {{ size.is.medium }}
+    run:
+      - action: add-label@v1
+        args:
+          label: 'medium'
+          color: 'FBBD10'
+
+  label_size_large:
+    if:
+      - {{ size.is.large }}
+    run:
+      - action: add-label@v1
+        args:
+          label: 'large'
+          color: 'E94637'
+
+  # ============================================================================
+  # SECURITY-SENSITIVE CODE DETECTION
+  # ============================================================================
+  require_security_review:
+    if:
+      - {{ is.security_sensitive }}
+    run:
+      - action: add-label@v1
+        args:
+          label: '🔒 security-sensitive'
+          color: 'E94637'
+      - action: add-comment@v1
+        args:
+          comment: |
+            ⚠️ **This PR modifies security-sensitive code paths**
+
+            Changes detected in:
+            - Galois Field operations (`shamir/math/`)
+            - Polynomial interpolation (`shamir/utils/`)
+            - Core API or error handling
+
+            **Required review checklist:**
+            - [ ] No timing side channels introduced
+            - [ ] Constant-time operations maintained where needed
+            - [ ] No secret leakage in errors, logs, or debug output
+            - [ ] Property-based tests added for new invariants
+            - [ ] All validation uses `Error` enum messages
+
+            See CLAUDE.md Security Guidelines for details.
+
+  # ============================================================================
+  # API CHANGE DETECTION
+  # ============================================================================
+  api_changes:
+    if:
+      - {{ is.api_change }}
+    run:
+      - action: add-label@v1
+        args:
+          label: '📋 api-change'
+          color: 'E94637'
+      - action: add-comment@v1
+        args:
+          comment: |
+            ⚠️ **This PR modifies the public API** (`shamir/__init__.py`)
+
+            **Required checklist:**
+            - [ ] Backward compatibility maintained (or major version bump planned)
+            - [ ] All changes documented in Google-style docstrings
+            - [ ] Examples updated if signatures changed
+            - [ ] `__all__` exports updated if adding/removing functions
+            - [ ] CHANGELOG.md updated (if applicable)
+
+            See CLAUDE.md API Stability & Versioning for guidelines.
+
+  # ============================================================================
+  # TEST COVERAGE REQUIREMENTS
+  # ============================================================================
+  missing_tests:
+    if:
+      - {{ is.code_change }}
+      - {{ not is.has_tests }}
+      - {{ not (is.formatting or is.docs) }}
+    run:
+      - action: add-label@v1
+        args:
+          label: '⚠️ missing-tests'
+          color: 'FBBD10'
+      - action: add-comment@v1
+        args:
+          comment: |
+            ⚠️ **This PR modifies `shamir/` code but doesn't include test changes**
+
+            Per CLAUDE.md guidelines, code changes should include corresponding tests.
+
+            Consider adding:
+            - Unit tests for new functions/methods
+            - Edge case tests for validation logic
+            - Property-based tests for mathematical invariants
+            - Integration tests for API changes
+
+            Run tests locally:
+            ```bash
+            uv sync
+            uv run pytest -n auto -v
+            ```
+
+  # ============================================================================
+  # DEPENDENCY MANAGEMENT
+  # ============================================================================
+  dependency_changes:
+    if:
+      - {{ is.dependency_change }}
+    run:
+      - action: add-label@v1
+        args:
+          label: '📦 dependencies'
+          color: '0366d6'
+      - action: add-comment@v1
+        args:
+          comment: |
+            📦 **This PR modifies dependencies**
+
+            **Required verification:**
+            - [ ] New dependencies justified (see CLAUDE.md Dependency Management)
+            - [ ] Security advisories checked (CVE database, GitHub Security)
+            - [ ] Package actively maintained (recent commits, responsive maintainers)
+            - [ ] `uv sync` tested locally
+            - [ ] License compatibility verified
+
+            Philosophy: Minimal dependencies, security first.
+
+  # ============================================================================
+  # CI/WORKFLOW CONFIGURATION
+  # ============================================================================
+  workflow_changes:
+    if:
+      - {{ is.workflow_change }}
+    run:
+      - action: add-label@v1
+        args:
+          label: '⚙️ ci-config'
+          color: '0366d6'
+      - action: add-comment@v1
+        args:
+          comment: |
+            ⚙️ **This PR modifies CI/workflow configuration**
+
+            Changes to workflows require careful review to ensure:
+            - Test coverage requirements maintained
+            - Security scanning not bypassed
+            - Pre-commit hooks still enforced
+            - All Python versions still tested
+
+  # ============================================================================
+  # DOCUMENTATION DRIFT DETECTION
+  # ============================================================================
+  docs_drift:
+    if:
+      - {{ is.code_change }}
+      - {{ not is.has_docs_update }}
+      - {{ size.is.large }}
+    run:
+      - action: add-comment@v1
+        args:
+          comment: |
+            📚 **Large PR with code changes - documentation update check**
+
+            Consider whether documentation needs updating:
+            - `README.md` for user-facing changes
+            - `CLAUDE.md` for development guidelines
+            - `examples/` for new functionality
+            - Docstrings for public API changes
+
+  # ============================================================================
+  # PERFORMANCE-SENSITIVE CHANGES
+  # ============================================================================
+  performance_changes:
+    if:
+      - {{ is.performance_sensitive }}
+    run:
+      - action: add-comment@v1
+        args:
+          comment: |
+            ⚡ **This PR modifies performance-critical paths**
+
+            Consider running benchmarks locally:
+            ```bash
+            uv run pytest tests/test_benchmarks.py --codspeed -v
+            ```
+
+            Performance expectations (CLAUDE.md):
+            - 1MB secrets: split/combine < 500ms
+            - 255 parts with threshold 128: should work reliably
+            - Memory: O(secret_size * parts)
+
+  # ============================================================================
+  # AUTO-APPROVAL (TRIVIAL CHANGES ONLY)
+  # ============================================================================
+  approve_trivial:
+    if:
+      - {{ size.is.small }}
+      - {{ is.formatting or is.docs }}
+      - {{ not is.code_change }}
+      - {{ not is.api_change }}
+      - {{ not is.security_sensitive }}
+    run:
+      - action: add-label@v1
+        args:
+          label: 'trivial'
           color: '36A853'
       - action: approve@v1
+        args:
+          comment: "Auto-approved: trivial formatting or documentation change"
 
+  # ============================================================================
+  # SAFE CHANGES (LABEL ONLY, NO AUTO-APPROVE)
+  # ============================================================================
+  safe_changes:
+    if:
+      - {{ is.formatting or is.docs }}
+      - {{ not is.code_change }}
+    run:
+      - action: add-label@v1
+        args:
+          label: 'safe-changes'
+          color: '36A853'
 
+# ==============================================================================
+# HELPER DEFINITIONS
+# ==============================================================================
 calc:
   etr: {{ branch | estimatedReviewTime }}
+
 is:
+  # Basic file type detection
   formatting: {{ source.diff.files | isFormattingChange }}
   docs: {{ files | allDocs }}
   tests: {{ files | allTests }}
+
+  # Security-sensitive paths
+  security_sensitive: {{ files | match(regex=r/(shamir\/(math|utils|errors\.py|__init__\.py))/) | some }}
+
+  # API changes
+  api_change: {{ files | match(regex=r/shamir\/__init__\.py/) | some }}
+
+  # Code changes in library
+  code_change: {{ files | match(regex=r/^shamir\/.*\.py$/) | some }}
+
+  # Test coverage
+  has_tests: {{ files | match(regex=r/^tests\/.*\.py$/) | some }}
+
+  # Documentation updates
+  has_docs_update: {{ files | match(regex=r/(README\.md|CLAUDE\.md|examples\/)/) | some }}
+
+  # Dependency changes
+  dependency_change: {{ files | match(regex=r/(pyproject\.toml|uv\.lock)/) | some }}
+
+  # CI/workflow changes
+  workflow_change: {{ files | match(regex=r/\.github\/workflows\/.*\.yml$/) | some }}
+
+  # Performance-sensitive paths
+  performance_sensitive: {{ files | match(regex=r/shamir\/(math|utils)\/.*\.py/) | some }}
+
 size:
   is:
     small: {{ branch.diff.size < 20 }}
