@@ -31,7 +31,7 @@ jobs:
         run: uv sync --group dev
       - name: Run tests
         run: |
-          uv run pytest --junit-xml=junit/test-results-${{ matrix.python-version }}.xml --cov=shamir --cov-branch --cov-report=xml -n auto -m "not slow"
+          uv run pytest --junit-xml=junit/test-results-${{ matrix.python-version }}.xml --cov=shamir --cov-branch --cov-report=xml -n auto -m "not slow and not benchmark"
       - name: Code Coverage
         uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
         with:
