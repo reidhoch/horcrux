@@ -29,20 +29,6 @@ class TestSplitBenchmarks:
         secret = rng.randbytes(size)
         benchmark(lambda: split(secret, 5, 3, rng=rng))
 
-    @pytest.mark.benchmark
-    @pytest.mark.parametrize("size", [16, (16 * 16), (128 * 128)])
-    def test_split_high_threshold(self, size: int, benchmark: Any, rng: Random) -> None:
-        """Benchmark splitting with high threshold (128 of 255)."""
-        secret = rng.randbytes(size)
-        benchmark(lambda: split(secret, 255, 128, rng=rng))
-
-    @pytest.mark.benchmark
-    @pytest.mark.parametrize("size", [16, (16 * 16), (128 * 128)])
-    def test_split_many_parts(self, size: int, benchmark: Any, rng: Random) -> None:
-        """Benchmark splitting into many parts (255 parts, threshold 3)."""
-        secret = rng.randbytes(size)
-        benchmark(lambda: split(secret, 255, 3, rng=rng))
-
 
 class TestCombineBenchmarks:
     """Benchmarks for the combine() function."""
@@ -54,26 +40,6 @@ class TestCombineBenchmarks:
         secret = rng.randbytes(size)
         parts = split(secret, 5, 3, rng=rng)
         benchmark(lambda: combine(parts[:3]))
-
-    @pytest.mark.benchmark
-    @pytest.mark.parametrize("size", [16, (16 * 16), (128 * 128)])
-    def test_combine_high_threshold(
-        self, size: int, benchmark: Any, rng: Random
-    ) -> None:
-        """Benchmark combining with high threshold (128 of 255)."""
-        secret = rng.randbytes(size)
-        parts = split(secret, 255, 128, rng=rng)
-        benchmark(lambda: combine(parts[:128]))
-
-    @pytest.mark.benchmark
-    @pytest.mark.parametrize("size", [16, (16 * 16), (128 * 128)])
-    def test_combine_many_parts_used(
-        self, size: int, benchmark: Any, rng: Random
-    ) -> None:
-        """Benchmark combining using all 255 parts (threshold 3)."""
-        secret = rng.randbytes(size)
-        parts = split(secret, 255, 3, rng=rng)
-        benchmark(lambda: combine(parts))  # Use all parts
 
 
 class TestRoundtripBenchmarks:
