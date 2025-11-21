@@ -19,7 +19,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from shamir import combine, split
+from shamir import Shares, combine, split
 
 
 def setup_inheritance_package(
@@ -57,7 +57,7 @@ def setup_inheritance_package(
     package_bytes = package_json.encode("utf-8")
 
     # Split into shares using Shamir's Secret Sharing
-    raw_shares = split(package_bytes, parts=num_shares, threshold=threshold)
+    raw_shares: Shares = split(package_bytes, parts=num_shares, threshold=threshold)
 
     # Encode shares to base64 for easy storage/transmission
     beneficiary_names = ["Spouse", "Child_1", "Child_2", "Executor", "Lawyer"]
@@ -93,7 +93,7 @@ def recover_inheritance_package(shares: dict[str, str]) -> dict[str, Any]:
     decoded_shares = [b64decode(share) for share in shares.values()]
 
     # Convert to bytearray for combine function
-    share_arrays = [bytearray(share) for share in decoded_shares]
+    share_arrays: Shares = [bytearray(share) for share in decoded_shares]
 
     # Reconstruct original data
     recovered_bytes = combine(share_arrays)

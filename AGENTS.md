@@ -26,6 +26,7 @@ uv run pytest -n auto                # Run full test suite
 | `├─math/`          | Galois Field GF(256) operations (add, mul, div, inverse)   |
 | `├─utils/`         | Polynomial class for Lagrange interpolation                |
 | `├─errors.py`      | Error message enum - all validation errors defined here    |
+| `├─py.typed`       | PEP 561 marker for type checking (enables downstream mypy) |
 | `tests/`           | Comprehensive pytest suite with markers                    |
 | `examples/`        | Simple demonstration projects                              |
 
@@ -35,9 +36,14 @@ uv run pytest -n auto                # Run full test suite
 
 The public API (from `shamir/__init__.py`) exports:
 
-- `split(secret, parts, threshold, rng=None, version=None) -> list[bytearray]` - Split secret into parts
-- `combine(parts) -> bytearray` - Reconstruct secret from parts (auto-detects version)
+- `split(secret, parts, threshold, rng=None, version=None) -> Shares` - Split secret into parts (max 100MB)
+- `combine(parts: Shares) -> bytearray` - Reconstruct secret from parts (auto-detects version)
 - `__version__` - Package version string
+
+**Type Aliases** (for documentation):
+
+- `Share: TypeAlias = bytearray` - Individual share
+- `Shares: TypeAlias = list[Share]` - Collection of shares
 
 ### Design Principles
 
@@ -150,6 +156,9 @@ To add a new version:
   - Exception: Test files have `disallow_untyped_defs = false` override
 - **No `Any` types**: Prefer `object` or proper type unions
 - **Explicit optionals**: Use `Type | None` not implicit optionals
+- **Type aliases**: Use `TypeAlias` for better API documentation (e.g., `Share`, `Shares`)
+- **Literal types**: Use `Literal` for constrained values (e.g., `version: Literal[0, 1]`)
+- **PEP 561 compliance**: The `shamir/py.typed` marker file enables downstream type checking
 
 ### Error Handling
 
@@ -172,6 +181,12 @@ To add a new version:
 - See examples in `shamir/__init__.py:30-48` (combine) and `shamir/__init__.py:76-84` (split)
 - Private/internal functions may have brief descriptions
 - Include Args, Returns, Raises sections for public functions
+
+### Performance Patterns
+
+- **Use `__slots__`**: Add `__slots__` to classes to reduce memory footprint (see `Polynomial` class at `shamir/utils/__init__.py:13`)
+- **Avoid list comprehensions in hot loops**: Use direct indexing for better performance (see optimized `combine()` loop at `shamir/__init__.py:98-102`)
+- **Type hints improve performance**: Well-typed code enables better optimizations
 
 ## Security Guidelines
 
@@ -198,6 +213,11 @@ This is a **security-focused library**. All code must maintain:
    - Validate all inputs before processing
    - Fail fast on invalid input
    - Use specific error messages (from Error enum)
+
+5. **Resource limits**:
+   - Enforce `MAX_SECRET_SIZE` (100MB) to prevent memory exhaustion DoS attacks
+   - Validate against all size/count limits before allocation
+   - See comprehensive security documentation in `split()` function docstring (`shamir/__init__.py:257-286`)
 
 ### When Adding Security-Sensitive Code
 
@@ -436,6 +456,17 @@ Each example should:
 - Uses `uv` for dependency management and publishing
 - Security scanning via CodeQL and Scorecards
 
+### Security Workflows
+
+The project includes comprehensive security scanning via `.github/workflows/security.yaml`:
+
+- **Semgrep SAST**: Advanced static analysis with OWASP Top 10, secrets, and security-audit rulesets
+- **Bandit**: Python-specific security linting configured in `pyproject.toml`
+- **pip-audit**: Dependency vulnerability scanning (fails on critical/high severity)
+- **GitLeaks**: Secrets detection across full git history
+- **Schedule**: Runs on push/PR, plus weekly Monday 00:00 UTC scans
+- **Results**: SARIF uploaded to GitHub Security tab
+
 ## Code Review Guidelines
 
 ### Philosophy
@@ -529,7 +560,10 @@ Before approving, verify:
 - **Linting**: `uv run ruff check` (or with `--fix`)
 - **Formatting**: `uv run ruff format`
 - **Type Checking**: `uv run mypy`
-- **Security Scan**: `uv run pre-commit run gitleaks --all-files`
+- **Security Scans**:
+  - `uv run pre-commit run gitleaks --all-files` (secrets detection)
+  - `uv run bandit -r shamir/ -s B105` (Python security linting)
+  - `uv run pip-audit --desc` (dependency vulnerability scanning)
 - **All Checks**: `uv run pre-commit run --all-files`
 
 ### Testing

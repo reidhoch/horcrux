@@ -21,7 +21,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-from shamir import combine, split
+from shamir import Shares, combine, split
 
 
 class BackupStrategy(Enum):
@@ -87,7 +87,7 @@ class WalletBackup:
         seed_bytes = self.seed_phrase.encode("utf-8")
 
         # Split into shares
-        raw_shares = split(
+        raw_shares: Shares = split(
             seed_bytes,
             parts=self.strategy.total,
             threshold=self.strategy.threshold,
@@ -115,7 +115,7 @@ class WalletBackup:
         decoded_shares = [b64decode(share) for share in shares]
 
         # Convert to bytearrays
-        share_arrays = [bytearray(share) for share in decoded_shares]
+        share_arrays: Shares = [bytearray(share) for share in decoded_shares]
 
         # Recover original seed
         recovered_bytes = combine(share_arrays)

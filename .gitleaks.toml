@@ -12,6 +12,8 @@ paths = [
     '''README.md''',
     '''.github/copilot-instructions.md''',
     '''TEST_SUITE_DOCUMENTATION.md''',
+    '''shamir/errors.py''',  # Error messages contain words like "secret" (false positives)
+    '''shamir/__init__.py''',  # Error enum references contain words like "secret" (false positives)
     '''tests/.*''',
     '''examples/.*''',
     '''.*test.*\.py''',

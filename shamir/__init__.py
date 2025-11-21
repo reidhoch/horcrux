@@ -1,7 +1,7 @@
 """Python implementation of Shamir's Secret Sharing."""
 
 from random import Random, SystemRandom
-from typing import Final
+from typing import Final, Literal, TypeAlias
 
 from shamir.utils import Polynomial, interpolate
 
@@ -26,14 +26,21 @@ MIN_PART_LENGTH: Final[int] = 2
 MIN_PART_LENGTH_VERSIONED: Final[int] = 3
 MAX_PARTS: Final[int] = 255
 MAX_THRESHOLD: Final[int] = 255
+MAX_SECRET_SIZE: Final[int] = (
+    100 * 1024 * 1024
+)  # 100MB - prevents memory exhaustion DoS
 
 # Share format versions
-SHARE_VERSION_LEGACY: Final[int] = 0  # No version byte (backward compatibility)
-SHARE_VERSION_1: Final[int] = 1  # Version byte + y-values + x-coordinate
-CURRENT_SHARE_VERSION: Final[int] = SHARE_VERSION_1
+SHARE_VERSION_LEGACY: Final = 0  # No version byte (backward compatibility)
+SHARE_VERSION_1: Final = 1  # Version byte + y-values + x-coordinate
+CURRENT_SHARE_VERSION: Final = SHARE_VERSION_1
+
+# Type aliases for better documentation
+Share: TypeAlias = bytearray
+Shares: TypeAlias = list[Share]
 
 
-def combine(parts: list[bytearray]) -> bytearray:
+def combine(parts: Shares) -> bytearray:
     """Combine is used to reconstruct a secret once a threshold is reached.
 
     Args:
@@ -93,7 +100,9 @@ def combine(parts: list[bytearray]) -> bytearray:
         x_samples[i] = sample
 
     for idx in range(len(secret)):
-        y_samples[:] = [part[idx + y_offset] for part in parts]
+        # Direct indexing avoids list comprehension allocation overhead
+        for i, part in enumerate(parts):
+            y_samples[i] = part[idx + y_offset]
         secret[idx] = interpolate(x_samples, y_samples, 0)
 
     return secret
@@ -143,7 +152,7 @@ def _validate_split_params(
     secret: bytes,
     parts: int,
     threshold: int,
-    version: int | None,
+    version: Literal[0, 1] | None,
 ) -> None:
     """Validate parameters for split operation.
 
@@ -164,6 +173,8 @@ def _validate_split_params(
         raise ValueError(Error.THRESHOLD_MUST_BE_AT_LEAST_2)
     if parts < threshold:
         raise ValueError(Error.PARTS_CANNOT_BE_LESS_THAN_THRESHOLD)
+    if len(secret) > MAX_SECRET_SIZE:
+        raise ValueError(Error.SECRET_EXCEEDS_MAX_SIZE)
     if not secret:
         raise ValueError(Error.CANNOT_SPLIT_EMPTY_SECRET)
     if version is not None and version not in (SHARE_VERSION_LEGACY, SHARE_VERSION_1):
@@ -188,9 +199,9 @@ def _generate_x_coordinates(rng: Random) -> list[int]:
 def _allocate_shares(
     parts: int,
     secret_len: int,
-    version: int,
+    version: Literal[0, 1],
     x_coords: list[int],
-) -> tuple[list[bytearray], int]:
+) -> tuple[Shares, int]:
     """Allocate and initialize share arrays.
 
     Args:
@@ -226,16 +237,16 @@ def split(
     parts: int,
     threshold: int,
     rng: Random | None = None,
-    version: int | None = None,
-) -> list[bytearray]:
-    """Split an arbitrarily long secret into a number of parts.
+    version: Literal[0, 1] | None = None,
+) -> Shares:
+    r"""Split an arbitrarily long secret into a number of parts.
 
     A threshold of which are required to reconstruct the secret.
 
     Args:
-        secret: The secret data to split into shares.
-        parts: The number of shares to create.
-        threshold: The minimum number of shares required to reconstruct.
+        secret: The secret data to split into shares (max 100MB).
+        parts: The number of shares to create (2-255).
+        threshold: The minimum number of shares required to reconstruct (2-255).
         rng: Optional random number generator. Defaults to SystemRandom().
         version: Share format version. 0 for legacy (no version byte),
                 1 for version 1 (includes version byte). Defaults to version 1
@@ -248,6 +259,37 @@ def split(
 
     Raises:
         ValueError: If parameters are invalid or out of allowed ranges.
+
+    Security Considerations:
+        Random Number Generator (Critical):
+            The RNG is critical for security. The default SystemRandom() uses
+            OS-level cryptographic RNG (/dev/urandom on Unix, CryptGenRandom
+            on Windows) and provides information-theoretic security.
+
+            WARNING: Only provide a custom RNG for testing/reproducibility.
+            Using a weak or predictable RNG (e.g., Random(seed)) completely
+            breaks information-theoretic security. Attackers could predict
+            polynomial coefficients and forge arbitrary shares.
+
+            For production: ALWAYS use the default SystemRandom().
+            For HSM integration: Implement Random interface with HSM calls.
+
+        Memory Security:
+            Python's garbage collector may leave secret copies in memory.
+            Secrets and polynomial coefficients may persist until GC runs.
+
+            For highly sensitive secrets:
+            - Disable core dumps: ulimit -c 0 or setrlimit(RLIMIT_CORE, 0)
+            - Use encrypted swap/pagefile
+            - Clear returned bytearrays after use: part[:] = b'\x00' * len(part)
+            - Run in memory-locked processes (mlock/VirtualLock)
+            - Consider secure enclaves (Intel SGX, ARM TrustZone) for
+              ultra-high-security scenarios
+
+        Performance:
+            Memory usage: O(secret_length * parts)
+            CPU time: O(secret_length * parts * threshold)
+            Maximum secret size: 100MB (configurable via MAX_SECRET_SIZE)
     """
     # Validate all parameters
     _validate_split_params(secret, parts, threshold, version)

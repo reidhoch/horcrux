@@ -10,6 +10,8 @@ __all__: list[str] = ["Polynomial", "interpolate"]
 class Polynomial:
     """A Polynomial of arbitrary degree."""
 
+    __slots__ = ("coefficients",)
+
     def __init__(
         self,
         degree: int,
