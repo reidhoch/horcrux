@@ -217,7 +217,7 @@ This is a **security-focused library**. All code must maintain:
 5. **Resource limits**:
    - Enforce `MAX_SECRET_SIZE` (100MB) to prevent memory exhaustion DoS attacks
    - Validate against all size/count limits before allocation
-   - See comprehensive security documentation in `split()` function docstring (`shamir/__init__.py:257-286`)
+   - See comprehensive security documentation in `split()` function docstring in `shamir/__init__.py`
 
 ### When Adding Security-Sensitive Code
 
