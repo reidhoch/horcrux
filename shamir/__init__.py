@@ -1,7 +1,7 @@
 """Python implementation of Shamir's Secret Sharing."""
 
 from random import Random, SystemRandom
-from typing import Final, Literal, TypeAlias
+from typing import Final, TypeAlias
 
 from shamir.utils import Polynomial, interpolate
 
@@ -110,7 +110,7 @@ def combine(parts: Shares) -> bytearray:
     return secret
 
 
-def _detect_share_version(parts: list[bytearray]) -> int:
+def _detect_share_version(parts: Shares) -> int:
     """Detect the version of shares by examining the first byte.
 
     Args:
@@ -154,7 +154,7 @@ def _validate_split_params(
     secret: bytes,
     parts: int,
     threshold: int,
-    version: Literal[0, 1] | None,
+    version: int | None,
 ) -> None:
     """Validate parameters for split operation.
 
@@ -201,7 +201,7 @@ def _generate_x_coordinates(rng: Random) -> list[int]:
 def _allocate_shares(
     parts: int,
     secret_len: int,
-    version: Literal[0, 1],
+    version: int,
     x_coords: list[int],
 ) -> tuple[Shares, int]:
     """Allocate and initialize share arrays.
@@ -217,7 +217,7 @@ def _allocate_shares(
     """
     if version == SHARE_VERSION_LEGACY:
         # Legacy format: [y_bytes..., x]
-        output: list[bytearray] = [bytearray(secret_len + 1) for _ in range(parts)]
+        output: Shares = [bytearray(secret_len + 1) for _ in range(parts)]
         y_offset = 0
     else:  # version == SHARE_VERSION_1
         # Version 1 format: [version, y_bytes..., x]
@@ -239,9 +239,9 @@ def split(
     parts: int,
     threshold: int,
     rng: Random | None = None,
-    version: Literal[0, 1] | None = None,
+    version: int | None = None,
 ) -> Shares:
-    """Split an arbitrarily long secret into a number of parts.
+    r"""Split an arbitrarily long secret into a number of parts.
 
     A threshold of which are required to reconstruct the secret.
 
