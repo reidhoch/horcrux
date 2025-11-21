@@ -1,0 +1,145 @@
+name: Security Scanning
+
+on:
+  push:
+    branches: ["develop"]
+  pull_request:
+    branches: ["develop"]
+  schedule:
+    # Run security scans weekly on Monday at 00:00 UTC
+    - cron: "0 0 * * 1"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  semgrep:
+    name: Semgrep SAST
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2 # v2.13.2
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@56e105ba2d80f8f19b5c9854b9e1de0c7e1c63dd # v1
+        with:
+          config: >-
+            p/default
+            p/python
+            p/security-audit
+            p/owasp-top-ten
+            p/secrets
+          generateSarif: true
+
+      - name: Upload Semgrep SARIF
+        uses: github/codeql-action/upload-sarif@e12f0178983d466f2f6028f5cc7a6d786fd97f4b # v3.29.5
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
+
+  bandit:
+    name: Bandit Security Linter
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2 # v2.13.2
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+
+      - name: Set up Python
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Install Bandit
+        run: pip install bandit[toml]
+
+      - name: Run Bandit
+        run: bandit -r shamir/ -f sarif -o bandit.sarif --severity-level medium --confidence-level medium || true
+
+      - name: Upload Bandit SARIF
+        uses: github/codeql-action/upload-sarif@e12f0178983d466f2f6028f5cc7a6d786fd97f4b # v3.29.5
+        if: always()
+        with:
+          sarif_file: bandit.sarif
+
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2 # v2.13.2
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+
+      - name: Set up Python
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244 # v7.1.4
+        with:
+          enable-cache: true
+
+      - name: Install project dependencies
+        run: uv sync --group dev
+
+      - name: Install pip-audit
+        run: uv pip install pip-audit
+
+      - name: Run pip-audit
+        run: |
+          uv pip list --format=freeze > requirements.txt
+          uv run pip-audit --requirement requirements.txt --format json --output pip-audit-report.json || true
+
+      - name: Upload pip-audit report
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        if: always()
+        with:
+          name: pip-audit-report
+          path: pip-audit-report.json
+
+      - name: Check for critical vulnerabilities
+        run: |
+          if [ -f pip-audit-report.json ]; then
+            CRITICAL_COUNT=$(jq '[.dependencies[] | select(.vulns[].severity == "critical" or .vulns[].severity == "high")] | length' pip-audit-report.json || echo "0")
+            if [ "$CRITICAL_COUNT" != "0" ]; then
+              echo "::error::Found $CRITICAL_COUNT critical/high severity vulnerabilities"
+              exit 1
+            fi
+          fi
+
+  secrets-scan:
+    name: Secrets Detection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@95d9a5deda9de15063e7595e9719c11c38c90ae2 # v2.13.2
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@6fb19ea35e1ead26e73a69da46a1e62456e22d4a # v2.7.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
