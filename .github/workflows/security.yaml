@@ -38,13 +38,6 @@ jobs:
             p/security-audit
             p/owasp-top-ten
             p/secrets
-          generateSarif: true
-
-      - name: Upload Semgrep SARIF
-        uses: github/codeql-action/upload-sarif@v3.29.5 # v3.29.5
-        if: always()
-        with:
-          sarif_file: semgrep.sarif
 
   bandit:
     name: Bandit Security Linter
@@ -67,13 +60,7 @@ jobs:
         run: pip install bandit[toml]
 
       - name: Run Bandit
-        run: bandit -r shamir/ -f sarif -o bandit.sarif --severity-level medium --confidence-level medium || true
-
-      - name: Upload Bandit SARIF
-        uses: github/codeql-action/upload-sarif@v3.29.5 # v3.29.5
-        if: always()
-        with:
-          sarif_file: bandit.sarif
+        run: bandit -r shamir/ --severity-level medium --confidence-level medium || true
 
   dependency-scan:
     name: Dependency Vulnerability Scan
@@ -140,6 +127,6 @@ jobs:
           fetch-depth: 0
 
       - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2.7.0 # v2.7.0
+        uses: gitleaks/gitleaks-action@v2.3.9 # v2.3.9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
