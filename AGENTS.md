@@ -185,7 +185,7 @@ To add a new version:
 ### Performance Patterns
 
 - **Use `__slots__`**: Add `__slots__` to classes to reduce memory footprint (see `Polynomial` class at `shamir/utils/__init__.py:13`)
-- **Avoid list comprehensions in hot loops**: Use direct indexing for better performance (see optimized `combine()` loop at `shamir/__init__.py:98-102`)
+- **Avoid list comprehensions in hot loops**: Use direct indexing for better performance (see optimized loop in the `combine()` function in `shamir/__init__.py`)
 - **Type hints improve performance**: Well-typed code enables better optimizations
 
 ## Security Guidelines
