@@ -36,6 +36,8 @@ SHARE_VERSION_1: Final = 1  # Version byte + y-values + x-coordinate
 CURRENT_SHARE_VERSION: Final = SHARE_VERSION_1
 
 # Type aliases for better documentation
+# NOTE: `Share` is a mutable type (bytearray) for performance reasons.
+#       Do not modify shares after creation, as this may lead to unexpected behavior.
 Share: TypeAlias = bytearray
 Shares: TypeAlias = list[Share]
 
