@@ -31,6 +31,6 @@ jobs:
             - name: Run the benchmarks
               uses: CodSpeedHQ/action@daf3e64a6d2f9906e7267edc3b9d354262c8442f # v4.4.0
               with:
-                  mode: instrumentation
+                  mode: simulation
                   run: uv run pytest --codspeed -m benchmark
                   token: ${{ secrets.CODSPEED_TOKEN }}
