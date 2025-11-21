@@ -175,10 +175,10 @@ def _validate_split_params(
         raise ValueError(Error.THRESHOLD_MUST_BE_AT_LEAST_2)
     if parts < threshold:
         raise ValueError(Error.PARTS_CANNOT_BE_LESS_THAN_THRESHOLD)
-    if len(secret) > MAX_SECRET_SIZE:
-        raise ValueError(Error.SECRET_EXCEEDS_MAX_SIZE)
     if not secret:
         raise ValueError(Error.CANNOT_SPLIT_EMPTY_SECRET)
+    if len(secret) > MAX_SECRET_SIZE:
+        raise ValueError(Error.SECRET_EXCEEDS_MAX_SIZE)
     if version is not None and version not in (SHARE_VERSION_LEGACY, SHARE_VERSION_1):
         raise ValueError(Error.UNSUPPORTED_SHARE_VERSION)
 
