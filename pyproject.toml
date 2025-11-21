@@ -35,8 +35,10 @@ Changelog = "https://github.com/reidhoch/horcrux/releases"
 
 [dependency-groups]
 dev = [
+  "bandit[toml]>=1.8.0",
   "hypothesis>=6.142.1",
   "mypy>=1.16",
+  "pip-audit>=2.9.0",
   "pre-commit>=4.2",
   "psutil>=7.1.0",
   "pytest>=8.4",
@@ -56,6 +58,7 @@ version-file = "shamir/_version.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["shamir"]
+artifacts = ["shamir/py.typed"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -98,3 +101,7 @@ markers = [
   "slow: marks tests as slow (deselect with '-m \"not slow\"')",
   "benchmark: marks tests as benchmarks (deselect with '-m \"not benchmark\"')",
 ]
+
+[tool.bandit]
+exclude_dirs = ["tests", "examples"]
+skips = ["B101", "B105"]  # Skip assert_used and hardcoded_password_string (false positives on error messages)

@@ -3,7 +3,7 @@ import string
 from base64 import b64encode
 from random import shuffle
 
-from shamir import combine, split
+from shamir import Shares, combine, split
 
 
 def password() -> None:
@@ -18,7 +18,7 @@ def password() -> None:
         ):
             break
     print(f"Generated password: {password}")  # noqa: T201
-    parts: list[bytearray] = split(password.encode("ascii"), 5, 3)
+    parts: Shares = split(password.encode("ascii"), 5, 3)
     print("Generating base64 encoded shares.")  # noqa: T201
     for idx, part in enumerate(parts):
         print(f"{idx}:\t{b64encode(part).decode('ascii')}")  # noqa: T201
