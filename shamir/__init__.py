@@ -241,7 +241,7 @@ def split(
     rng: Random | None = None,
     version: Literal[0, 1] | None = None,
 ) -> Shares:
-    r"""Split an arbitrarily long secret into a number of parts.
+    """Split an arbitrarily long secret into a number of parts.
 
     A threshold of which are required to reconstruct the secret.
 
