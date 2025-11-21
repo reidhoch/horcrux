@@ -31,9 +31,9 @@ MAX_SECRET_SIZE: Final[int] = (
 )  # 100MB - prevents memory exhaustion DoS
 
 # Share format versions
-SHARE_VERSION_LEGACY: Final = 0  # No version byte (backward compatibility)
-SHARE_VERSION_1: Final = 1  # Version byte + y-values + x-coordinate
-CURRENT_SHARE_VERSION: Final = SHARE_VERSION_1
+SHARE_VERSION_LEGACY: Final[int] = 0  # No version byte (backward compatibility)
+SHARE_VERSION_1: Final[int] = 1  # Version byte + y-values + x-coordinate
+CURRENT_SHARE_VERSION: Final[int] = SHARE_VERSION_1
 
 # Type aliases for better documentation
 # NOTE: `Share` is a mutable type (bytearray) for performance reasons.
