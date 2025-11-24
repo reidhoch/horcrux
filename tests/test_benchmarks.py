@@ -23,7 +23,15 @@ class TestSplitBenchmarks:
     """Benchmarks for the split() function."""
 
     @pytest.mark.benchmark
-    @pytest.mark.parametrize("size", [16, (16 * 16), (128 * 128)])
+    @pytest.mark.parametrize(
+        "size",
+        [
+            1024,  # 1 KB
+            (10 * 1024),  # 10 KB
+            (100 * 1024),  # 100 KB
+            (1024 * 1024),  # 1 MB
+        ],
+    )
     def test_split(self, size: int, benchmark: Any, rng: Random) -> None:
         """Benchmark splitting a secret of various sizes."""
         secret = rng.randbytes(size)
@@ -34,7 +42,15 @@ class TestCombineBenchmarks:
     """Benchmarks for the combine() function."""
 
     @pytest.mark.benchmark
-    @pytest.mark.parametrize("size", [16, (16 * 16), (128 * 128)])
+    @pytest.mark.parametrize(
+        "size",
+        [
+            1024,  # 1 KB
+            (10 * 1024),  # 10 KB
+            (100 * 1024),  # 100 KB
+            (1024 * 1024),  # 1 MB
+        ],
+    )
     def test_combine(self, size: int, benchmark: Any, rng: Random) -> None:
         """Benchmark combining a secret of various sizes."""
         secret = rng.randbytes(size)
@@ -46,7 +62,15 @@ class TestRoundtripBenchmarks:
     """Benchmarks for complete split+combine roundtrip."""
 
     @pytest.mark.benchmark
-    @pytest.mark.parametrize("size", [16, (16 * 16), (128 * 128)])
+    @pytest.mark.parametrize(
+        "size",
+        [
+            1024,  # 1 KB
+            (10 * 1024),  # 10 KB
+            (100 * 1024),  # 100 KB
+            (1024 * 1024),  # 1 MB
+        ],
+    )
     def test_roundtrip(self, size: int, benchmark: Any, rng: Random) -> None:
         """Benchmark complete split+combine for a secret of various sizes."""
         secret = rng.randbytes(size)

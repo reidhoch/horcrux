@@ -348,10 +348,10 @@ uv run pytest -m "not benchmark"                    # Skip benchmark tests
 
 - **`@pytest.mark.benchmark`**: Marks tests as benchmarks (performance tracking)
   - Use pytest-codspeed to track performance over time
-  - Benchmarks cover split/combine/roundtrip operations across multiple sizes (16B, 256B, 16KB)
+  - Benchmarks cover split/combine/roundtrip operations across multiple sizes (1KB, 10KB, 100KB, 1MB)
   - Also benchmarks low-level GF(256) math operations (add, mul, div, inverse)
   - Located in `tests/test_benchmarks.py`
-  - 25 total benchmark tests (21 parameterized + 4 math primitives)
+  - 16 total benchmark tests (12 parameterized + 4 math primitives)
 
 ### Property-Based Testing
 
@@ -442,7 +442,9 @@ Each example should:
 
 ## Performance Expectations
 
-- 1MB secrets should split/combine in <500ms
+Tested on an Apple M1 Max
+
+- 1MB secrets should split/combine in <60s
 - 255 parts (max) with threshold 128 should work reliably
 - Memory usage should be O(secret_size * parts)
 
