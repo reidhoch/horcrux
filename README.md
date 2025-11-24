@@ -348,7 +348,7 @@ uv run pytest -m "not benchmark"
 
 Benchmarks track performance of core operations across different configurations:
 
-- **Split/Combine operations**: 1KB, 10KB, 100KB, 1MB
+- **Split/Combine operations**: 1 KB, 10 KB, 100 KB, 1 MB
 - **Share configurations**: Standard (5 parts/3 threshold)
 - **Roundtrip operations**: Complete split+combine cycles
 - **GF(256) math primitives**: Addition, multiplication, division, and inverse operations
