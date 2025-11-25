@@ -2,6 +2,7 @@ from random import Random
 from typing import Any
 
 import pytest
+
 from shamir.math import add, mul
 from shamir.utils import Polynomial, interpolate
 
