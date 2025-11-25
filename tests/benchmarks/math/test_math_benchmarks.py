@@ -6,12 +6,6 @@ import pytest
 from shamir.math import add, div, inverse, mul
 
 
-@pytest.fixture
-def rng() -> Random:
-    """Provide deterministic RNG for reproducible benchmarks."""
-    return Random(42)
-
-
 class TestMathBenchmarks:
     """Benchmarks for low-level GF(256) math operations."""
 

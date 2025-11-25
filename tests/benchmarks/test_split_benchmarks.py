@@ -6,12 +6,6 @@ import pytest
 from shamir import split
 
 
-@pytest.fixture
-def rng() -> Random:
-    """Provide deterministic RNG for reproducible benchmarks."""
-    return Random(42)
-
-
 class TestSplitBenchmarks:
     """Benchmarks for the split() function."""
 

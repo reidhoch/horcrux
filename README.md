@@ -413,7 +413,7 @@ Recent changes:
   - Added MAX_SECRET_SIZE (100MB) limit to prevent memory exhaustion DoS
   - Enhanced security documentation with RNG and memory security guidance
   - Performance improvement from optimized combine() loop
-  - Memory reduction from **slots** optimization
+  - Memory reduction from `__slots__` optimization
   - Added type aliases (Share, Shares) and Literal types for better type safety
   - Added py.typed marker for PEP 561 compliance
   - New security workflow with Semgrep, Bandit, pip-audit, GitLeaks

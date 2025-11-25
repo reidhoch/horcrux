@@ -6,14 +6,8 @@ import pytest
 from shamir import combine, split
 
 
-@pytest.fixture
-def rng() -> Random:
-    """Provide deterministic RNG for reproducible benchmarks."""
-    return Random(42)
-
-
-class TestCombineBenchmarks:
-    """Benchmarks for the combine() function."""
+class TestRoundtripBenchmarks:
+    """Benchmarks for a split()/combine() roundtrip."""
 
     @pytest.mark.benchmark
     @pytest.mark.parametrize("size", [16, 256, (16 * 1024)])

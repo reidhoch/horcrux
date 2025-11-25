@@ -6,12 +6,6 @@ from shamir.math import add, mul
 from shamir.utils import Polynomial, interpolate
 
 
-@pytest.fixture
-def rng() -> Random:
-    """Provide deterministic RNG for reproducible benchmarks."""
-    return Random(42)
-
-
 class TestPolynomialBenchmarks:
     """Benchmarks for polynomial operations."""
 
