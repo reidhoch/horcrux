@@ -351,7 +351,7 @@ uv run pytest -m "not benchmark"                    # Skip benchmark tests
   - Benchmarks cover split/combine/roundtrip operations across multiple sizes (16 B, 256 B, 16 KB)
   - Also benchmarks low-level GF(256) math operations (add, mul, div, inverse)
   - Located in `tests/benchmarks`
-  - 16 total benchmark tests (12 parameterized + 4 math primitives)
+  - 15 total benchmark tests
 
 ### Property-Based Testing
 
