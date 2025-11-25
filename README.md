@@ -337,7 +337,7 @@ uv run pytest -n auto
 
 ```bash
 # Run benchmarks with pytest-codspeed
-uv run pytest tests/test_benchmarks.py --codspeed
+uv run pytest tests/benchmarks --codspeed
 
 # Run benchmarks only (skip regular tests)
 uv run pytest -m benchmark --codspeed
@@ -348,7 +348,7 @@ uv run pytest -m "not benchmark"
 
 Benchmarks track performance of core operations across different configurations:
 
-- **Split/Combine operations**: 1 KB, 10 KB, 100 KB, 1 MB
+- **Split/Combine operations**: 16 B, 256 B, 16 KB
 - **Share configurations**: Standard (5 parts/3 threshold)
 - **Roundtrip operations**: Complete split+combine cycles
 - **GF(256) math primitives**: Addition, multiplication, division, and inverse operations
@@ -409,11 +409,11 @@ See [Releases](https://github.com/reidhoch/horcrux/releases) for detailed versio
 
 Recent changes:
 
-- **v1.2.0** (upcoming): Security hardening and performance optimizations
+- **v1.2.0**: Security hardening and performance optimizations
   - Added MAX_SECRET_SIZE (100MB) limit to prevent memory exhaustion DoS
   - Enhanced security documentation with RNG and memory security guidance
-  - 15-20% performance improvement from optimized combine() loop
-  - 5-10% memory reduction from __slots__ optimization
+  - Performance improvement from optimized combine() loop
+  - Memory reduction from **slots** optimization
   - Added type aliases (Share, Shares) and Literal types for better type safety
   - Added py.typed marker for PEP 561 compliance
   - New security workflow with Semgrep, Bandit, pip-audit, GitLeaks
@@ -470,6 +470,10 @@ If you use Horcrux in academic work, please cite:
    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=reidhoch/horcrux&type=date&legend=top-left" />
  </picture>
 </a>
+
+## Benchmarks
+
+[![CodSpeed Badge](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://codspeed.io/reidhoch/horcrux?utm_source=badge)
 
 ---
 
