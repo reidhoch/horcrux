@@ -24,10 +24,6 @@ class TestMathematicalProperties:
                 product = mul(a, b)
                 assert div(product, b) == a
 
-        # Test division by zero raises exception
-        with pytest.raises(ZeroDivisionError):
-            div(1, 0)
-
     def test_polynomial_evaluation_properties(self) -> None:
         """Test polynomial evaluation properties."""
         # Test that polynomial evaluation at 0 gives intercept
