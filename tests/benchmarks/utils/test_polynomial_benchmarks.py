@@ -12,6 +12,7 @@ class TestPolynomialBenchmarks:
 
     @pytest.mark.benchmark
     def test_evaluate(self, benchmark: Any, rng: Random) -> None:
+        """Benchmark polynomial evaluation."""
         poly: Polynomial = Polynomial(intercept=42, degree=1, rng=rng)
         assert poly.evaluate(0) == 42
         out: int = benchmark(poly.evaluate, 1)
@@ -20,6 +21,7 @@ class TestPolynomialBenchmarks:
 
     @pytest.mark.benchmark
     def test_interpolate(self, benchmark: Any, rng: Random) -> None:
+        """Benchmark Lagrange interpolation."""
         poly: Polynomial = Polynomial(intercept=123, degree=2, rng=rng)
         x: bytearray = bytearray([1, 2, 3])
         y: bytearray = bytearray([poly.evaluate(1), poly.evaluate(2), poly.evaluate(3)])
