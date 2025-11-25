@@ -352,6 +352,7 @@ Benchmarks track performance of core operations across different configurations:
 - **Share configurations**: Standard (5 parts/3 threshold)
 - **Roundtrip operations**: Complete split+combine cycles
 - **GF(256) math primitives**: Addition, multiplication, division, and inverse operations
+- **Polynomial operations**: Polynomial evaluation and Lagrange interpolation
 
 ### Code Quality
 
