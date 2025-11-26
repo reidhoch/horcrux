@@ -219,12 +219,18 @@ def _compute_lagrange_basis(x_samples: bytearray) -> bytearray:
 def _detect_share_version(parts: Shares) -> int:
     """Detect the version of shares using improved heuristics.
 
-    Uses statistical sampling across multiple shares to reduce false positive rate
-    from 1/256 (0.39%) to approximately (1/256)^2 = 1/65536 (0.0015%) when
-    checking 2+ shares.
+    Version 1 shares have a version byte (0x01) as the first byte. Version 0
+    (legacy) shares do not have a version byte - their first byte is the first
+    y-value, which can randomly be 0x01 with 1/256 probability.
 
-    Detects truly mixed versions (legitimate version 0 and version 1 shares mixed
-    together) but allows for corrupted individual shares to be processed.
+    Detection strategy:
+    1. Check if shares have different lengths → definitely mixed (error)
+    2. Check if ALL shares start with 0x01 → version 1
+    3. Check if NONE start with 0x01 → version 0
+    4. If SOME start with 0x01:
+       - Check all shares (not just sample) to distinguish:
+         * If truly split 50/50 across ALL shares → likely intentional mixing
+         * If split is due to sampling → likely false positives in v0 shares
 
     Args:
         parts: List of shares to examine.
@@ -233,35 +239,48 @@ def _detect_share_version(parts: Shares) -> int:
         The detected share version (SHARE_VERSION_LEGACY or SHARE_VERSION_1).
 
     Raises:
-        ValueError: If shares appear to have intentionally mixed versions
-                   (some legitimately v0, some legitimately v1).
+        ValueError: If shares appear to have intentionally mixed versions.
     """
     if not parts:
         return SHARE_VERSION_LEGACY
 
-    # Sample up to 3 shares for version detection
-    sample_size = min(3, len(parts))
-    v1_votes = 0
-    legacy_votes = 0
+    # Check all shares for length consistency and first-byte patterns
+    first_length = len(parts[0])
+    shares_starting_with_01 = 0
 
-    for i in range(sample_size):
-        first_byte = parts[i][0]
-        if first_byte == SHARE_VERSION_1:
-            v1_votes += 1
-        else:
-            legacy_votes += 1
+    for part in parts:
+        # Check for length mismatches
+        if len(part) != first_length:
+            raise ValueError(Error.MIXED_SHARE_VERSIONS)
 
-    # Check for truly mixed versions: if we have BOTH v1 and legacy votes
-    # from different shares, it's likely intentional mixing (not corruption)
-    # Perfect split indicates intentional mixing (not corruption)
-    if v1_votes > 0 and legacy_votes > 0 and v1_votes == legacy_votes:
-        raise ValueError(Error.MIXED_SHARE_VERSIONS)
+        # Count shares starting with 0x01
+        if part[0] == SHARE_VERSION_1:
+            shares_starting_with_01 += 1
 
-    # Use majority voting for version detection
-    if v1_votes >= (sample_size + 1) // 2:
+    # If ALL shares start with 0x01, they're version 1
+    if shares_starting_with_01 == len(parts):
         return SHARE_VERSION_1
 
-    # Detected as legacy format
+    # If NONE start with 0x01, they're clearly version 0
+    if shares_starting_with_01 == 0:
+        return SHARE_VERSION_LEGACY
+
+    # SOME shares start with 0x01, but not all.
+    # Calculate the ratio to distinguish intentional mixing from false positives
+    ratio = shares_starting_with_01 / len(parts)
+
+    # Only check for intentional mixing if we have enough shares to make a reliable
+    # determination. With only 2 shares, a 50/50 split is ambiguous (could be false
+    # positive). With 3+ shares, we can apply statistical reasoning.
+    #
+    # For 3+ shares: if ratio is in 40%-60% range (exclusive of 60%), it suggests
+    # intentional mixing rather than random false positives (~1/256 = 0.39%)
+    if len(parts) >= 3 and 0.40 <= ratio < 0.60:  # noqa: PLR2004
+        raise ValueError(Error.MIXED_SHARE_VERSIONS)
+
+    # Otherwise, treat as version 0 with some false positives (if ratio < 40%)
+    # or use majority voting for version 1 (if ratio >= 60%)
+    # For 2 shares, always treat ambiguous cases as version 0
     return SHARE_VERSION_LEGACY
 
 

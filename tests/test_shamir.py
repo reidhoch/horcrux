@@ -46,13 +46,21 @@ def test_detect_empty_parts_list() -> None:
 
 
 def test_combine_mixed_version_shares() -> None:
-    """Test combine rejects shares with mixed versions."""
-    mixed_parts = [
-        bytearray([0x01, 0x42, 0x10]),  # First byte is 0x01 (version 1)
-        bytearray([0x00, 0x43, 0x20]),  # First byte is NOT 0x01
-    ]
+    """Test combine rejects shares with different lengths (natural mixed versions).
 
-    with pytest.raises(ValueError, match=Error.MIXED_SHARE_VERSIONS):
+    Natural v0/v1 shares for the same secret have different lengths (v1 is 1 byte
+    longer due to version byte). The length check catches this before version detection.
+    """
+    # Create v1 shares for a 2-byte secret (length = 4: version + 2 y-values + x-coord)
+    v1_parts = split(b"XY", 3, 2, version=1, rng=Random(42))
+    # Create v0 shares for a 2-byte secret (length = 3: 2 y-values + x-coord)
+    v0_parts = split(b"AB", 3, 2, version=0, rng=Random(43))
+
+    # Mix shares with different lengths (4 vs 3)
+    mixed_parts = [v1_parts[0], v0_parts[0]]
+
+    # Different lengths are caught by the length check
+    with pytest.raises(ValueError, match=Error.ALL_PARTS_MUST_BE_SAME_LENGTH):
         combine(mixed_parts)
 
 

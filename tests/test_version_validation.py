@@ -49,29 +49,29 @@ class TestMixedVersionDetection:
     lengths and would fail the length check before version detection.
     """
 
-    def test_detect_perfectly_mixed_versions_two_shares(self) -> None:
-        """Test that perfectly mixed v0/v1 shares (2 shares) raise error.
+    def test_detect_perfectly_mixed_versions_three_shares(self) -> None:
+        """Test that perfectly mixed v0/v1 shares (3+ shares) raise error.
 
-        When we have exactly 2 shares and one is v0 and one is v1,
-        we have a perfect tie (v1_votes=1, legacy_votes=1), which indicates
-        intentional mixing rather than corruption.
+        With 3+ shares in a ~50/50 split, we can reliably detect intentional
+        mixing. With only 2 shares, a 50/50 split is ambiguous and cannot be
+        distinguished from v0 shares where one y-value happens to be 0x01.
         """
         # Create v1 shares for a 2-byte secret
         secret = b"XY"
-        v1_parts = split(secret, 3, 2, rng=Random(123), version=1)
+        v1_parts = split(secret, 5, 3, rng=Random(123), version=1)
 
-        # Craft a "legacy-like" share by replacing the version byte (0x01) with
-        # a different value (e.g., 0x42). This simulates a legacy share that
-        # happens to have the same length as a v1 share.
+        # Craft fake "legacy-like" shares by replacing the version byte (0x01)
         # v1 format: [0x01, y1, y2, x]
         # fake v0: [0x42, y1, y2, x] (looks like legacy because first byte != 0x01)
-        fake_v0_part = bytearray(v1_parts[1])  # Copy a v1 share
-        fake_v0_part[0] = 0x42  # Change version byte to simulate legacy
+        fake_v0_part1 = bytearray(v1_parts[1])
+        fake_v0_part1[0] = 0x42
+        fake_v0_part2 = bytearray(v1_parts[2])
+        fake_v0_part2[0] = 0x43
 
-        # Mix: 1 real v1 share + 1 fake v0 share (50/50 split)
-        mixed_parts = [v1_parts[0], fake_v0_part]
+        # Mix: 2 v1 shares + 2 fake v0 shares = 4 shares with 50/50 split
+        mixed_parts = [v1_parts[0], fake_v0_part1, fake_v0_part2, v1_parts[3]]
 
-        # This SHOULD raise MIXED_SHARE_VERSIONS error
+        # This SHOULD raise MIXED_SHARE_VERSIONS error (ratio = 2/4 = 50%)
         with pytest.raises(
             ValueError,
             match=Error.MIXED_SHARE_VERSIONS,
