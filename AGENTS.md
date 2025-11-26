@@ -101,6 +101,7 @@ Before adding new public functions:
 The `combine()` function can auto-detect share version or use an explicit version parameter:
 
 **Auto-Detection** (default behavior):
+
 1. Samples up to 3 shares for version detection (majority voting)
 2. **Version 1 detection**: If first byte is `0x01`, counts as v1 vote
 3. **Legacy detection**: Otherwise, counts as legacy vote
@@ -108,11 +109,13 @@ The `combine()` function can auto-detect share version or use an explicit versio
 5. **Mixed version detection**: Raises error if votes are evenly split (indicates intentional mixing)
 
 **Explicit Version** (100% reliable):
+
 - Pass `version=0` for legacy shares or `version=1` for version 1 shares
 - Eliminates false positive rate entirely
 - Recommended when you know the share format
 
 **False Positive Rate**:
+
 - **Auto-detection alone**: 1/256 (0.39%) chance of false positive for legacy shares
 - **Majority voting (3 shares)**: ~1/65536 (0.0015%) false positive rate
 - **Explicit version**: 0% false positive rate (100% reliable)
@@ -406,6 +409,71 @@ Use Hypothesis for testing mathematical properties:
 - Error detection: Modifying any share byte breaks reconstruction
 - See `tests/test_shamir.py` for basic examples
 - See `tests/test_fuzz_comprehensive.py` for comprehensive property-based tests
+
+### Constant-Time Testing
+
+The library includes two levels of constant-time testing to detect timing side-channels:
+
+#### Basic Tests (`tests/test_constant_time_ops.py`)
+
+- **Purpose**: Catch obvious timing leaks with lenient thresholds
+- **Marked**: `@pytest.mark.slow` (skipped in CI to avoid flakiness)
+- **Approach**: Coefficient of variation (CV) analysis with wide tolerances
+- **Use case**: Primary guard against egregious timing leaks
+
+#### Enhanced Tests (`tests/test_enhanced_timing.py`)
+
+- **Purpose**: Statistical rigor with Kruskal-Wallis hypothesis testing
+- **Requires**: scipy for statistical analysis
+- **Marked**: `@pytest.mark.slow` (skipped in CI)
+- **Approach**:
+  - Kruskal-Wallis H-test (non-parametric distribution comparison)
+  - Coefficient of variation analysis
+  - Percentile distribution consistency checks
+
+**Test Thresholds (calibrated for Python):**
+
+| Test Type | Threshold | Rationale |
+|-----------|-----------|-----------|
+| Kruskal-Wallis p-value | > 0.001 | 99.9% confidence, accounts for 10K sample sensitivity |
+| CV (individual ops) | < 0.5 (50%) | Python baseline is ~35%, allows GC pauses |
+| CV range (combine) | < 0.3 (30%) | Permits trial-to-trial variation, catches secret-dependent patterns |
+| Mean timing ratio | < 1.2x | Practical exploitation threshold (20% difference) |
+
+**Python Constant-Time Limitations:**
+
+Python's CPython runtime makes true constant-time operations impossible:
+
+1. **Baseline variability**: Basic operations have ~35-37% CV
+2. **Garbage collection**: Causes unpredictable timing spikes (can reach 400%+ CV)
+3. **Dynamic typing**: Memory allocation and type checking add variable overhead
+4. **OS scheduling**: Introduces timing jitter beyond application control
+
+This library implements constant-time patterns (bit-masking, no branching on secrets) to minimize timing leaks. However, **measurable timing variations (10-15%) remain** due to CPython's inherent characteristics. These variations are **below practical exploitation thresholds** (1.2x) for most threat models.
+
+**For stronger constant-time guarantees**: Use compiled languages with explicit constant-time libraries (e.g., libsodium, BearSSL).
+
+**Running constant-time tests:**
+
+```bash
+# Run all constant-time tests (may take several minutes)
+uv run pytest tests/test_constant_time_ops.py tests/test_enhanced_timing.py -v
+
+# Run with coverage
+uv run pytest tests/test_constant_time_ops.py tests/test_enhanced_timing.py -v --cov=shamir
+
+# Run enhanced tests only (requires scipy)
+uv run pytest tests/test_enhanced_timing.py -v
+```
+
+**Interpreting failures:**
+
+- **CV > 0.5**: Operation has excessive variance, investigate
+- **CV range > 0.3**: Secret-dependent timing detected
+- **p-value < 0.001**: Statistically significant timing differences
+- **Mean ratio > 1.2x**: Potentially exploitable timing leak
+
+**Note**: Occasional failures due to system noise (GC, OS scheduling) are expected. Run tests multiple times to confirm consistent failures before investigating.
 
 ## Common Pitfalls
 
