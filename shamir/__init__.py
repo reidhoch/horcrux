@@ -3,7 +3,8 @@
 from random import Random, SystemRandom
 from typing import Final, TypeAlias
 
-from shamir.utils import Polynomial, interpolate
+from shamir.math import add, div, mul
+from shamir.utils import Polynomial
 
 from .errors import Error
 
@@ -150,7 +151,6 @@ def combine(parts: Shares, version: int | None = None) -> bytearray:
 
     secret: bytearray = bytearray(secret_len)
     x_samples: bytearray = bytearray(len(parts))
-    y_samples: bytearray = bytearray(len(parts))
     seen_samples: set[int] = set()
 
     for i, part in enumerate(parts):
@@ -160,13 +160,57 @@ def combine(parts: Shares, version: int | None = None) -> bytearray:
         seen_samples.add(sample)
         x_samples[i] = sample
 
+    # Pre-compute Lagrange basis functions for x=0 (optimization)
+    # Since we always interpolate at x=0 and x_samples are the same for all
+    # secret bytes, we can compute the basis values once and reuse them.
+    # This eliminates O(k²) redundant GF(256) operations per byte.
+    basis_values = _compute_lagrange_basis(x_samples)
+
+    # Reconstruct each secret byte using pre-computed basis values
+    # secret[idx] = ∑[i] y_samples[i] * basis_values[i]
     for idx in range(len(secret)):
-        # Direct indexing avoids list comprehension allocation overhead
+        result: int = 0
         for i, part in enumerate(parts):
-            y_samples[i] = part[idx + y_offset]
-        secret[idx] = interpolate(x_samples, y_samples, 0)
+            y_value: int = part[idx + y_offset]
+            result = add(result, mul(y_value, basis_values[i]))
+        secret[idx] = result
 
     return secret
+
+
+def _compute_lagrange_basis(x_samples: bytearray) -> bytearray:
+    """Pre-compute Lagrange basis functions for interpolation at x=0.
+
+    For Lagrange interpolation at x=0, the basis functions only depend on the
+    x-coordinates and can be computed once for all secret bytes. This optimization
+    eliminates O(k²) redundant GF(256) operations per byte.
+
+    For x=0, the Lagrange basis formula simplifies:
+    L_i(0) = ∏[j≠i] (0 - x_j) / (x_i - x_j) = ∏[j≠i] x_j / (x_i - x_j)
+
+    In GF(256) with addition being XOR:
+    L_i(0) = ∏[j≠i] x_j / (x_i ⊕ x_j)
+
+    Args:
+        x_samples: X-coordinates of the shares (public data).
+
+    Returns:
+        Pre-computed Lagrange basis values for each share.
+    """
+    basis_values: bytearray = bytearray(len(x_samples))
+    for i in range(len(x_samples)):
+        basis: int = 1
+        for j in range(len(x_samples)):
+            if i == j:
+                continue
+            # For x=0: numerator = 0 ⊕ x_samples[j] = x_samples[j]
+            numerator: int = x_samples[j]
+            # Denominator = x_samples[i] ⊕ x_samples[j]
+            denominator: int = add(x_samples[i], x_samples[j])
+            term: int = div(numerator, denominator)
+            basis = mul(basis, term)
+        basis_values[i] = basis
+    return basis_values
 
 
 def _detect_share_version(parts: Shares) -> int:

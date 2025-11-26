@@ -1,5 +1,7 @@
 """Math utility functions in GF(2^8)."""
 
+from typing import Final
+
 __all__: list[str] = ["add", "div", "inverse", "mul"]
 
 
@@ -40,34 +42,25 @@ def div(a: int, b: int) -> int:
 def inverse(a: int) -> int:
     """Calculate the multiplicative inverse of a number in GF(2^8).
 
-    Uses Fermat's Little Theorem (constant-time exponentiation by squaring).
+    Uses pre-computed lookup table for O(1) performance. This is safe because
+    inverse() only operates on PUBLIC x-coordinates (x-coordinate differences
+    in Lagrange interpolation), never on private y-values. Cache timing attacks
+    on this table are not a concern as they only reveal public data.
+
+    Args:
+        a: Value to invert (1-255). Must not be zero.
+
+    Returns:
+        The multiplicative inverse such that mul(a, inverse(a)) = 1.
+
+    Raises:
+        ArithmeticError: If a == 0 (zero has no multiplicative inverse).
     """
     if a == 0:
         errmsg = "No multiplicative inverse for zero in GF(256)"
         raise ArithmeticError(errmsg)
 
-    # b = a^2  # noqa: ERA001
-    b = mul(a, a)
-    # c = (a^3)  # noqa: ERA001
-    c = mul(a, b)
-    # b = (a^3)^2 = a^6
-    b = mul(c, c)
-    # b = (a^6)^2 = a^12
-    b = mul(b, b)
-    # c = a^12 * a^3 = a^15
-    c = mul(b, c)
-    # b = (a^12)^2 = a^24
-    b = mul(b, b)
-    # b = (a^24)^2 = a^48
-    b = mul(b, b)
-    # b = a^48 * a^15 = a^63
-    b = mul(b, c)
-    # b = (a^63)^2 = a^126
-    b = mul(b, b)
-    # b = a^126 * a = a^127
-    b = mul(a, b)
-    # b = (a^127)^2 = a^254
-    return mul(b, b)
+    return _INVERSE_TABLE[a]
 
 
 def mul(a: int, b: int) -> int:
@@ -84,3 +77,36 @@ def mul(a: int, b: int) -> int:
         result ^= a & bit_mask  # No conditional branching
 
     return result
+
+
+# Pre-computed multiplicative inverse lookup table for GF(256)
+# This is safe because inverse() only operates on PUBLIC x-coordinates
+# (x-coordinate differences in Lagrange interpolation), never on private y-values.
+# Cache timing side-channels are not a concern for public data.
+_INVERSE_TABLE: Final[bytearray] = bytearray(256)
+
+
+def _init_inverse_table() -> None:
+    """Initialize the multiplicative inverse lookup table for GF(256).
+
+    This function is called once at module import time to pre-compute all
+    multiplicative inverses. Each entry i in the table contains the value j
+    such that mul(i, j) = 1 in GF(256).
+
+    Security Note:
+        This lookup table is safe to use because the inverse() function is
+        only called with PUBLIC x-coordinates in the Lagrange interpolation
+        process. X-coordinates identify which shares are being used and are
+        public values. Cache timing attacks on this table only reveal public data.
+    """
+    _INVERSE_TABLE[0] = 0  # 0 has no inverse, but define as 0 for completeness
+    for i in range(1, 256):
+        # Find j such that mul(i, j) = 1
+        for j in range(1, 256):
+            if mul(i, j) == 1:
+                _INVERSE_TABLE[i] = j
+                break
+
+
+# Initialize the inverse table at module import time
+_init_inverse_table()
