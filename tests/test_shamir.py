@@ -199,3 +199,84 @@ def test_combine_auto_detects_both_versions() -> None:
     # Both should reconstruct correctly via auto-detection
     assert combine(parts_v0[:3]) == secret
     assert combine(parts_v1[:3]) == secret
+
+
+def test_combine_with_explicit_version_parameter() -> None:
+    """Test combine with explicit version parameter eliminates false positives."""
+    secret = b"test"
+
+    # Create version 0 shares
+    parts_v0 = split(secret, 5, 3, version=0, rng=Random(42))
+
+    # Combine with explicit version=0 (100% reliable)
+    reconstructed_v0 = combine(parts_v0[:3], version=0)
+    assert reconstructed_v0 == secret
+
+    # Create version 1 shares
+    parts_v1 = split(secret, 5, 3, version=1, rng=Random(42))
+
+    # Combine with explicit version=1 (100% reliable)
+    reconstructed_v1 = combine(parts_v1[:3], version=1)
+    assert reconstructed_v1 == secret
+
+
+def test_combine_with_invalid_explicit_version() -> None:
+    """Test combine rejects invalid explicit version parameter."""
+    secret = b"test"
+    parts = split(secret, 5, 3, version=1, rng=Random(42))
+
+    # Version 2 is not supported
+    with pytest.raises(ValueError, match=Error.UNSUPPORTED_SHARE_VERSION):
+        combine(parts[:3], version=2)
+
+    # Version 255 is not supported
+    with pytest.raises(ValueError, match=Error.UNSUPPORTED_SHARE_VERSION):
+        combine(parts[:3], version=255)
+
+    # Negative version is not supported
+    with pytest.raises(ValueError, match=Error.UNSUPPORTED_SHARE_VERSION):
+        combine(parts[:3], version=-1)
+
+
+def test_combine_explicit_version_overrides_autodetect() -> None:
+    """Test that explicit version parameter overrides auto-detection."""
+    secret = b"test"
+
+    # Create version 1 shares
+    parts_v1 = split(secret, 5, 3, version=1, rng=Random(42))
+
+    # Even though shares are version 1, explicit version=1 should work
+    reconstructed = combine(parts_v1[:3], version=1)
+    assert reconstructed == secret
+
+    # Create version 0 shares
+    parts_v0 = split(secret, 5, 3, version=0, rng=Random(42))
+
+    # Even though shares are version 0, explicit version=0 should work
+    reconstructed = combine(parts_v0[:3], version=0)
+    assert reconstructed == secret
+
+
+def test_version_detection_majority_voting() -> None:
+    """Test that version detection uses majority voting across multiple shares."""
+    from shamir import _detect_share_version
+
+    # Create 3 version 1 shares (all start with 0x01)
+    parts_v1 = [
+        bytearray([0x01, 0x42, 0x10]),
+        bytearray([0x01, 0x43, 0x20]),
+        bytearray([0x01, 0x44, 0x30]),
+    ]
+
+    # Should detect as version 1 (all agree)
+    assert _detect_share_version(parts_v1) == 1
+
+    # Create 3 legacy shares (none start with 0x01)
+    parts_v0 = [
+        bytearray([0x42, 0x10]),
+        bytearray([0x43, 0x20]),
+        bytearray([0x44, 0x30]),
+    ]
+
+    # Should detect as version 0 (legacy)
+    assert _detect_share_version(parts_v0) == 0

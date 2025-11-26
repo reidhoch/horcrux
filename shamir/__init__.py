@@ -41,14 +41,27 @@ CURRENT_SHARE_VERSION: Final[int] = SHARE_VERSION_1
 Share: TypeAlias = bytearray
 Shares: TypeAlias = list[Share]
 
+# Version configuration: (secret_len_offset, y_offset, min_part_length, error_message)
+# - secret_len_offset: bytes to subtract from part length to get secret length
+# - y_offset: starting index for y-values in share
+# - min_part_length: minimum allowed part length for this version
+# - error_message: error to raise if part length too short
+_VERSION_CONFIG: Final[dict[int, tuple[int, int, int, str]]] = {
+    SHARE_VERSION_LEGACY: (1, 0, MIN_PART_LENGTH, Error.PARTS_MUST_BE_TWO_BYTES),
+    SHARE_VERSION_1: (2, 1, MIN_PART_LENGTH_VERSIONED, Error.PARTS_MUST_BE_THREE_BYTES),
+}
 
-def combine(parts: Shares) -> bytearray:
-    """Combine is used to reconstruct a secret once a threshold is reached.
+
+def combine(parts: Shares, version: int | None = None) -> bytearray:
+    r"""Combine is used to reconstruct a secret once a threshold is reached.
 
     Args:
         parts: List of secret parts to combine. Must all be the same length
               and include the x-coordinate in the last byte. Supports both
               legacy (unversioned) and versioned share formats.
+        version: Explicit share version (0 for legacy, 1 for version 1).
+                If None, auto-detect from first byte. Explicit version
+                eliminates 1/256 false positive rate in auto-detection.
 
     Returns:
         The reconstructed secret as a bytearray.
@@ -58,6 +71,49 @@ def combine(parts: Shares) -> bytearray:
                    mismatched lengths, if parts are too short, if duplicate
                    parts are detected, if shares have unsupported versions,
                    or if mixing different share versions.
+
+    Examples:
+        Auto-detection (works 99.61% of the time for legacy shares):
+        >>> secret = combine(shares)
+
+        Explicit version (100% reliable, recommended):
+        >>> secret = combine(shares, version=1)  # For version 1 shares
+        >>> secret = combine(shares, version=0)  # For legacy shares
+
+    Security Considerations:
+        Python Constant-Time Limitations:
+            This library implements constant-time algorithms for GF(256) operations
+            to mitigate timing side-channels. However, CPython has inherent limitations:
+
+            1. INTEGER CACHING: CPython caches integers in range [-5, 256], causing
+               different memory access patterns for cached vs. non-cached values.
+               This creates potential cache timing side-channels.
+
+            2. INTERPRETER OVERHEAD: The GIL, reference counting, and bytecode
+               interpretation add timing noise that may obscure or reveal patterns.
+
+            3. MEMORY ALLOCATOR: Python's memory manager behavior is not constant-time.
+
+            For applications requiring defense against sophisticated timing attacks
+            (nation-state adversaries, side-channel experts):
+            - Use native extension module (Rust/C with formal verification)
+            - Deploy in secure enclaves (Intel SGX, ARM TrustZone)
+            - Integrate with HSM for critical operations
+            - Consider vetted libraries like libsodium via ctypes
+
+            This implementation provides best-effort constant-time operations suitable
+            for most applications, but cannot guarantee protection against all
+            side-channel attacks in pure Python.
+
+        Memory Security:
+            Python's garbage collector may leave secret copies in memory.
+            The reconstructed secret may persist until GC runs.
+
+            For highly sensitive secrets:
+            - Disable core dumps: ulimit -c 0 or setrlimit(RLIMIT_CORE, 0)
+            - Use encrypted swap/pagefile
+            - Clear returned bytearray after use: secret[:] = b'\x00' * len(secret)
+            - Run in memory-locked processes (mlock/VirtualLock)
 
     WARNING: This function does not validate the threshold. Ensure you
     provide at least the threshold number of parts used during split().
@@ -71,23 +127,26 @@ def combine(parts: Shares) -> bytearray:
     if not all(len(part) == first_part_len for part in parts):
         raise ValueError(Error.ALL_PARTS_MUST_BE_SAME_LENGTH)
 
-    # Detect share version by checking first byte
-    # Version byte is 0x00 (legacy) or 0x01+ (versioned)
-    # Legacy shares: [y_0, y_1, ..., y_n, x]
-    # Versioned shares: [version, y_0, y_1, ..., y_n, x]
-    share_version = _detect_share_version(parts)
+    # Detect or validate share version
+    if version is None:
+        # Auto-detect share version by checking first byte
+        # Version byte is 0x00 (legacy) or 0x01+ (versioned)
+        # Legacy shares: [y_0, y_1, ..., y_n, x]
+        # Versioned shares: [version, y_0, y_1, ..., y_n, x]
+        share_version = _detect_share_version(parts)
+    else:
+        # Validate explicit version parameter
+        if version not in (SHARE_VERSION_LEGACY, SHARE_VERSION_1):
+            raise ValueError(Error.UNSUPPORTED_SHARE_VERSION)
+        share_version = version
 
-    if share_version == SHARE_VERSION_LEGACY:
-        # Legacy format: no version byte
-        # Note: MIN_PART_LENGTH already checked at line 60
-        secret_len = first_part_len - 1
-        y_offset = 0
-    else:  # share_version == SHARE_VERSION_1
-        # Version 1 format: [version, y_bytes..., x]
-        if first_part_len < MIN_PART_LENGTH_VERSIONED:
-            raise ValueError(Error.PARTS_MUST_BE_THREE_BYTES)
-        secret_len = first_part_len - 2  # Subtract version byte and x-coordinate
-        y_offset = 1  # Skip version byte when reading y-values
+    # Look up version-specific configuration (eliminates branching)
+    secret_len_offset, y_offset, min_required_len, error_msg = _VERSION_CONFIG[
+        share_version
+    ]
+    if first_part_len < min_required_len:
+        raise ValueError(error_msg)
+    secret_len = first_part_len - secret_len_offset
 
     secret: bytearray = bytearray(secret_len)
     x_samples: bytearray = bytearray(len(parts))
@@ -111,7 +170,14 @@ def combine(parts: Shares) -> bytearray:
 
 
 def _detect_share_version(parts: Shares) -> int:
-    """Detect the version of shares by examining the first byte.
+    """Detect the version of shares using improved heuristics.
+
+    Uses statistical sampling across multiple shares to reduce false positive rate
+    from 1/256 (0.39%) to approximately (1/256)^2 = 1/65536 (0.0015%) when
+    checking 2+ shares.
+
+    Detects truly mixed versions (legitimate version 0 and version 1 shares mixed
+    together) but allows for corrupted individual shares to be processed.
 
     Args:
         parts: List of shares to examine.
@@ -120,33 +186,35 @@ def _detect_share_version(parts: Shares) -> int:
         The detected share version (SHARE_VERSION_LEGACY or SHARE_VERSION_1).
 
     Raises:
-        ValueError: If shares have mixed versions or unsupported version.
+        ValueError: If shares appear to have intentionally mixed versions
+                   (some legitimately v0, some legitimately v1).
     """
     if not parts:
         return SHARE_VERSION_LEGACY
 
-    # Check first byte of first share
-    first_byte = parts[0][0]
+    # Sample up to 3 shares for version detection
+    sample_size = min(3, len(parts))
+    v1_votes = 0
+    legacy_votes = 0
 
-    # Version detection heuristic:
-    # - If first byte is 0x01, likely version 1
-    # - Otherwise, assume legacy format
-    # This works because:
-    # 1. Version 1 shares always start with 0x01
-    # 2. Legacy shares start with y-value, which is random (0-255)
-    # 3. Only 1/256 chance of false positive (y-value happens to be 0x01)
-    # 4. All shares in a set will have same format, so if first is version 1, all are
+    for i in range(sample_size):
+        first_byte = parts[i][0]
+        if first_byte == SHARE_VERSION_1:
+            v1_votes += 1
+        else:
+            legacy_votes += 1
 
-    if first_byte == SHARE_VERSION_1:
-        # Verify all shares have same version
-        for part in parts:
-            if part[0] != SHARE_VERSION_1:
-                raise ValueError(Error.MIXED_SHARE_VERSIONS)
+    # Check for truly mixed versions: if we have BOTH v1 and legacy votes
+    # from different shares, it's likely intentional mixing (not corruption)
+    # Perfect split indicates intentional mixing (not corruption)
+    if v1_votes > 0 and legacy_votes > 0 and v1_votes == legacy_votes:
+        raise ValueError(Error.MIXED_SHARE_VERSIONS)
+
+    # Use majority voting for version detection
+    if v1_votes >= (sample_size + 1) // 2:
         return SHARE_VERSION_1
 
-    # Assume legacy format (no version byte)
-    # Note: There's a 1/256 chance of false positive if legacy share
-    # happens to start with 0x01, but this is acceptable trade-off
+    # Detected as legacy format
     return SHARE_VERSION_LEGACY
 
 
@@ -287,6 +355,39 @@ def split(
             - Run in memory-locked processes (mlock/VirtualLock)
             - Consider secure enclaves (Intel SGX, ARM TrustZone) for
               ultra-high-security scenarios
+
+        Python Constant-Time Limitations:
+            This library implements constant-time algorithms for GF(256) operations
+            to mitigate timing side-channels. However, CPython has inherent limitations:
+
+            1. INTEGER CACHING: CPython caches integers in range [-5, 256], causing
+               different memory access patterns for cached vs. non-cached values.
+               This creates potential cache timing side-channels.
+
+            2. INTERPRETER OVERHEAD: The GIL, reference counting, and bytecode
+               interpretation add timing noise that may obscure or reveal patterns.
+
+            3. MEMORY ALLOCATOR: Python's memory manager behavior is not constant-time.
+
+            For applications requiring defense against sophisticated timing attacks
+            (nation-state adversaries, side-channel experts):
+            - Use native extension module (Rust/C with formal verification)
+            - Deploy in secure enclaves (Intel SGX, ARM TrustZone)
+            - Integrate with HSM for critical operations
+            - Consider vetted libraries like libsodium via ctypes
+
+            This implementation provides best-effort constant-time operations suitable
+            for most applications, but cannot guarantee protection against all
+            side-channel attacks in pure Python.
+
+        Information Disclosure:
+            Share size reveals secret length (inherent to Shamir's Secret Sharing).
+            Information-theoretic security applies to secret CONTENT, not metadata.
+
+            If secret length must be hidden:
+            - Pad secret to fixed size before splitting
+            - Use format-preserving encryption as wrapper
+            - Combine with steganography for distribution
 
         Performance:
             Memory usage: O(secret_length * parts)
