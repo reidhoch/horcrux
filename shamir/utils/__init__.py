@@ -2,9 +2,9 @@
 
 from random import Random, SystemRandom
 
-from shamir.math import add, div, mul
+from shamir.math import add, mul
 
-__all__: list[str] = ["Polynomial", "interpolate"]
+__all__: list[str] = ["Polynomial"]
 
 
 class Polynomial:
@@ -27,6 +27,30 @@ class Polynomial:
         # Assign random coefficients to the polynomial.
         self.coefficients[1:] = rng.randbytes(degree)
 
+    @classmethod
+    def _from_coefficients(
+        cls,
+        intercept: int,
+        random_coeffs: bytearray,
+    ) -> "Polynomial":
+        """Create polynomial from pre-generated coefficients (optimization).
+
+        This classmethod allows creating polynomials from a batch of pre-generated
+        random coefficients, avoiding repeated syscalls to the OS RNG.
+
+        Args:
+            intercept: The y-intercept (secret byte value).
+            random_coeffs: Pre-generated random coefficients for the polynomial.
+
+        Returns:
+            A new Polynomial instance with the specified coefficients.
+        """
+        poly = cls.__new__(cls)
+        poly.coefficients = bytearray(len(random_coeffs) + 1)
+        poly.coefficients[0] = intercept
+        poly.coefficients[1:] = random_coeffs
+        return poly
+
     def evaluate(self, x: int) -> int:
         """Return the value of the polynomial for the given x."""
         # Compute the polynomial using Horner's method.
@@ -36,21 +60,3 @@ class Polynomial:
             coefficient: int = self.coefficients[i]
             out = add(mul(out, x), coefficient)
         return out
-
-
-def interpolate(x_samples: bytearray, y_samples: bytearray, x: int) -> int:
-    """Take N sample points and return the value of a given x using Lagrange interpolation."""  # noqa: E501
-    limit: int = len(x_samples)
-    result: int = 0
-    for i in range(limit):
-        basis: int = 1
-        for j in range(limit):
-            if i == j:
-                continue
-            numerator: int = add(x, x_samples[j])
-            denominator: int = add(x_samples[i], x_samples[j])
-            term: int = div(numerator, denominator)
-            basis = mul(basis, term)
-        group: int = mul(y_samples[i], basis)
-        result = add(result, group)
-    return result

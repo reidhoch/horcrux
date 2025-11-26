@@ -43,7 +43,7 @@ class TestConstantTimeOperations:
         timings_by_secret = {}
 
         for secret_name, secret in test_secrets.items():
-            timings = []
+            timings: list[int] = []
 
             for trial in range(num_trials):
                 parts = split(secret, 5, threshold, rng=Random(trial))
@@ -87,7 +87,7 @@ class TestConstantTimeOperations:
 
         for length in secret_lengths:
             secret = b"X" * length
-            timings = []
+            timings: list[int] = []
 
             for trial in range(num_trials):
                 parts = split(secret, 5, threshold, rng=Random(trial))
@@ -353,21 +353,18 @@ class TestTimingDocumentation:
             "shamir.math.mul": "GF(256) multiplication must not leak operand info",
             "shamir.math.div": "GF(256) division must not leak operand info",
             "shamir.math.inverse": "GF(256) inverse must not leak operand info",
-            "shamir.utils.interpolate": "Lagrange interpolation must not leak secret",
             "shamir.combine": "Secret reconstruction must not leak secret value",
         }
 
         # Verify these functions exist
         from shamir import combine
         from shamir.math import add, div, inverse, mul
-        from shamir.utils import interpolate
 
         operations = {
             "shamir.math.add": add,
             "shamir.math.mul": mul,
             "shamir.math.div": div,
             "shamir.math.inverse": inverse,
-            "shamir.utils.interpolate": interpolate,
             "shamir.combine": combine,
         }
 

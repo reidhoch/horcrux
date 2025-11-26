@@ -150,14 +150,16 @@ def combine(parts: Shares, version: int | None = None) -> bytearray:
     secret_len = first_part_len - secret_len_offset
 
     secret: bytearray = bytearray(secret_len)
-    x_samples: bytearray = bytearray(len(parts))
-    seen_samples: set[int] = set()
+    num_parts: int = len(parts)
+    x_samples: bytearray = bytearray(num_parts)
+    # Bitset for O(1) duplicate detection (256 bytes vs set overhead)
+    seen: bytearray = bytearray(256)
 
-    for i, part in enumerate(parts):
-        sample: int = part[first_part_len - 1]
-        if sample in seen_samples:
+    for i in range(num_parts):
+        sample: int = parts[i][first_part_len - 1]
+        if seen[sample]:
             raise ValueError(Error.DUPLICATE_PART)
-        seen_samples.add(sample)
+        seen[sample] = 1
         x_samples[i] = sample
 
     # Pre-compute Lagrange basis functions for x=0 (optimization)
@@ -168,10 +170,11 @@ def combine(parts: Shares, version: int | None = None) -> bytearray:
 
     # Reconstruct each secret byte using pre-computed basis values
     # secret[idx] = ∑[i] y_samples[i] * basis_values[i]
+    # Cache num_parts and use direct indexing for better performance
     for idx in range(len(secret)):
         result: int = 0
-        for i, part in enumerate(parts):
-            y_value: int = part[idx + y_offset]
+        for i in range(num_parts):
+            y_value: int = parts[i][idx + y_offset]
             result = add(result, mul(y_value, basis_values[i]))
         secret[idx] = result
 
@@ -453,16 +456,30 @@ def split(
     # Allocate output shares and determine y-value offset
     output, y_offset = _allocate_shares(parts, len(secret), version, x_coords)
 
+    # Optimization: Pre-compute x-coordinate offsets (x_coords[i] + 1)
+    # This eliminates O(secret_length * parts) redundant additions
+    x_values: bytearray = bytearray(x_coords[i] + 1 for i in range(parts))
+
+    # Optimization: Batch generate all random coefficients in single syscall
+    # This reduces O(secret_length) syscalls to O(1) syscall to OS RNG
+    degree = threshold - 1
+    # Pre-generate all random coefficients for all polynomials at once
+    all_random_coeffs = bytearray(rng.randbytes(len(secret) * degree))
+
     # Generate polynomial shares for each byte of the secret
     for idx, val in enumerate(secret):
         # Construct a random polynomial for each byte of the secret.
         # Since we're using a field size of 256 we can only represent
         # a single byte as the intercept of the polynomial, so we have
         # to use a new polynomial for each byte.
-        poly: Polynomial = Polynomial(degree=threshold - 1, intercept=val, rng=rng)
+        # Extract pre-generated random coefficients for this byte's polynomial
+        coeff_start = idx * degree
+        coeff_end = coeff_start + degree
+        coeffs = all_random_coeffs[coeff_start:coeff_end]
+        poly: Polynomial = Polynomial._from_coefficients(val, coeffs)  # noqa: SLF001
 
         # Evaluate polynomial at each x-coordinate and store y-values
         for i in range(parts):
-            output[i][idx + y_offset] = poly.evaluate(x_coords[i] + 1)
+            output[i][idx + y_offset] = poly.evaluate(x_values[i])
 
     return output

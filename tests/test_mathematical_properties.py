@@ -2,11 +2,9 @@
 
 from random import Random
 
-import pytest
-
 from shamir import combine, split
 from shamir.math import add, div, mul
-from shamir.utils import Polynomial, interpolate
+from shamir.utils import Polynomial
 
 
 class TestMathematicalProperties:
@@ -35,23 +33,6 @@ class TestMathematicalProperties:
         for degree in range(1, 10):
             poly = Polynomial(degree=degree, intercept=42, rng=Random(42))
             assert len(poly.coefficients) == degree + 1
-
-    def test_lagrange_interpolation_properties(self) -> None:
-        """Test Lagrange interpolation mathematical properties."""
-        # Test interpolation with known polynomial
-        for degree in range(1, 5):
-            poly = Polynomial(degree=degree, intercept=123, rng=Random(123))
-
-            # Create sample points
-            x_points = list(range(1, degree + 2))  # Need degree+1 points
-            y_points = [poly.evaluate(x) for x in x_points]
-
-            x_s = bytearray(x_points)
-            y_s = bytearray(y_points)
-
-            # Interpolation should recover the intercept
-            recovered = interpolate(x_s, y_s, 0)
-            assert recovered == 123
 
     def test_secret_sharing_mathematical_correctness(self) -> None:
         """Test that the secret sharing follows Shamir's scheme mathematically."""
@@ -113,7 +94,7 @@ class TestMathematicalProperties:
 
         # XOR corresponding parts (except version byte and x-coordinate)
         # Note: Version 1 format is [version, y_values..., x_coord]
-        combined_parts = []
+        combined_parts: list[bytearray] = []
         for i in range(3):
             part = bytearray(3)  # version + secret length + x_coord
             part[0] = 1  # Version byte

@@ -334,7 +334,7 @@ uv run pytest -n auto                                  # Sequential, full suite
 **CI runs** (what GitHub Actions does):
 
 ```bash
-uv run pytest --cov=shamir --cov-report=xml -n auto -m "not slow"    # With coverage, skip slow tests
+uv run pytest --cov=shamir --cov-branch --cov-report=xml -n auto -m "not slow"    # With coverage, skip slow tests
 ```
 
 **Slow tests** (timing/performance tests that may be flaky):
@@ -460,7 +460,7 @@ This library implements constant-time patterns (bit-masking, no branching on sec
 uv run pytest tests/test_constant_time_ops.py tests/test_enhanced_timing.py -v
 
 # Run with coverage
-uv run pytest tests/test_constant_time_ops.py tests/test_enhanced_timing.py -v --cov=shamir
+uv run pytest tests/test_constant_time_ops.py tests/test_enhanced_timing.py -v --cov=shamir --cov-branch
 
 # Run enhanced tests only (requires scipy)
 uv run pytest tests/test_enhanced_timing.py -v
@@ -557,7 +557,7 @@ Each example should:
 
 Tested on an Apple M1 Max
 
-- 1MB secrets should split/combine in <60s
+- 1MB secrets should split/combine in <30s
 - 255 parts (max) with threshold 128 should work reliably
 - Memory usage should be O(secret_size * parts)
 
@@ -684,9 +684,8 @@ Before approving, verify:
 ### Testing
 
 - **Full suite**: `uv run pytest -n auto`
-- **With coverage**: `uv run pytest --cov=shamir --cov-report=html`
+- **With coverage**: `uv run pytest -n auto --cov=shamir --cov-branch --cov-report=json`
 - **Specific file**: `uv run pytest tests/test_shamir.py -v`
-- **Watch mode**: `uv run pytest-watch` (if installed)
 
 ### Development
 
@@ -703,7 +702,7 @@ Before approving, verify:
 2. **Pre-commit fails**: Run `uv run pre-commit run --all-files` to see failures
 3. **Type errors**: Use `uv run mypy` directly, check `pyproject.toml` config
 4. **Import errors**: Ensure `pythonpath = ["."]` in pytest config (already set)
-5. **Coverage failures**: Add tests for uncovered lines, check with `--cov-report=html`
+5. **Coverage failures**: Add tests for uncovered branches, check with `--cov-branch --cov-report=json`
 
 ### When Tests Fail
 

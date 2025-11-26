@@ -276,8 +276,8 @@ This implementation provides best-effort constant-time operations suitable for m
 
 ## Performance
 
-- **Speed**: Splits/combines 1MB secrets in <500ms on modern hardware
-- **Recent optimizations**: 15-20% performance improvement, 5-10% memory reduction
+- **Speed**: Splits/combines 1MB secrets in <30s on modern hardware
+- **Recent optimizations**: Performance improvement, memory reduction
 - **Scalability**: Supports up to 255 shares with any threshold, max 100MB secret size
 - **Complexity**: O(n×m×k) where n=secret length, m=number of shares, k=threshold
 - **Memory**: O(secret_size × parts) during split, O(secret_size × threshold) during combine
