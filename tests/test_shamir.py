@@ -92,7 +92,7 @@ def test_split_with_invalid_version() -> None:
 
     # Exceeds max size
     with pytest.raises(ValueError, match=Error.SECRET_EXCEEDS_MAX_SIZE):
-        large_secret = b"a" * (100 * (2**21))   # > 100 MB
+        large_secret = b"a" * (100 * (2**21))  # > 100 MB
         split(large_secret, 5, 3)
 
 
