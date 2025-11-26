@@ -265,9 +265,11 @@ class TestDishonestDealerDetection:
         # Create legitimate shares
         parts = split(secret, 5, threshold, rng=Random(24680))
 
-        # Corrupt one share by flipping bits in the y-coordinate
+        # Corrupt one share by flipping bits in the y-value
         corrupted_parts = [bytearray(p) for p in parts[:threshold]]
-        corrupted_parts[0][0] ^= 0xFF  # Flip all bits in y-coordinate
+        # For version 1 shares: [version_byte, y_value, x_coord]
+        # So index 1 is the y-value for a 1-byte secret
+        corrupted_parts[0][1] ^= 0xFF  # Flip all bits in y-value
 
         # Reconstruction will produce garbage, not the original secret
         reconstructed = combine(corrupted_parts)

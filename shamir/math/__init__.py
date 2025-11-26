@@ -31,7 +31,9 @@ def div(a: int, b: int) -> int:
 
     # Mask result to 0 if a == 0 (constant-time)
     # Create mask: 0xFF if a != 0, 0x00 if a == 0
-    a_nonzero_mask = (a | -a) >> (8 * (a.bit_length() // 8 or 1) - 1)
+    # Uses constant-time operations: (a | -a) propagates any set bit to sign position,
+    # right shift by 7 extracts to bit 0, mask to isolate, negate to get 0xFF or 0x00
+    a_nonzero_mask = -(((a | -a) >> 7) & 1) & 0xFF
     return result & a_nonzero_mask
 
 
@@ -81,4 +83,4 @@ def mul(a: int, b: int) -> int:
         bit_mask = -((b >> i) & 1)  # All 1s if bit set, else 0s
         result ^= a & bit_mask  # No conditional branching
 
-    return result & 0xFF
+    return result

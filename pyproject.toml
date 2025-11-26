@@ -86,6 +86,7 @@ ignore = ["COM812"]
 
 [tool.ruff.lint.per-file-ignores]
 "shamir/math/__init__.py" = ["A005"]
+"shamir/__init__.py" = ["C901"]  # combine() complexity is 11, acceptable for version handling
 
 [tool.ruff.lint.isort]
 known-first-party = ["shamir"]

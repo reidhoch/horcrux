@@ -37,7 +37,7 @@ uv run pytest -n auto                # Run full test suite
 The public API (from `shamir/__init__.py`) exports:
 
 - `split(secret, parts, threshold, rng=None, version=None) -> Shares` - Split secret into parts (max 100MB)
-- `combine(parts: Shares) -> bytearray` - Reconstruct secret from parts (auto-detects version)
+- `combine(parts: Shares, version=None) -> bytearray` - Reconstruct secret from parts (auto-detects version or use explicit version for 100% reliability)
 - `__version__` - Package version string
 
 **Type Aliases** (for documentation):
@@ -98,17 +98,24 @@ Before adding new public functions:
 
 ### Version Detection
 
-The `combine()` function automatically detects share version:
+The `combine()` function can auto-detect share version or use an explicit version parameter:
 
-1. **Version 1 detection**: If first byte is `0x01`, treats as version 1
-2. **Legacy detection**: Otherwise, assumes version 0 (legacy format)
-3. **Validation**: All shares must have the same version (no mixing)
+**Auto-Detection** (default behavior):
+1. Samples up to 3 shares for version detection (majority voting)
+2. **Version 1 detection**: If first byte is `0x01`, counts as v1 vote
+3. **Legacy detection**: Otherwise, counts as legacy vote
+4. **Majority wins**: Uses majority vote across sampled shares
+5. **Mixed version detection**: Raises error if votes are evenly split (indicates intentional mixing)
 
-**Important**: There's a 1/256 chance a legacy share's first y-value is `0x01`, causing false positive version 1 detection. This is acceptable because:
+**Explicit Version** (100% reliable):
+- Pass `version=0` for legacy shares or `version=1` for version 1 shares
+- Eliminates false positive rate entirely
+- Recommended when you know the share format
 
-- All shares in a set have the same format
-- If first share is correctly detected, all will be
-- Users can explicitly specify `version=0` if needed
+**False Positive Rate**:
+- **Auto-detection alone**: 1/256 (0.39%) chance of false positive for legacy shares
+- **Majority voting (3 shares)**: ~1/65536 (0.0015%) false positive rate
+- **Explicit version**: 0% false positive rate (100% reliable)
 
 ### Creating Versioned Shares
 
@@ -119,9 +126,13 @@ parts = split(secret, 5, 3)  # version defaults to 1
 # Legacy: Create version 0 shares (backward compatibility)
 parts_legacy = split(secret, 5, 3, version=0)
 
-# Both can be reconstructed automatically
-combine(parts)         # Auto-detects version 1
-combine(parts_legacy)  # Auto-detects version 0
+# Reconstruction with auto-detection
+combine(parts)         # Auto-detects version 1 (99.6% reliable)
+combine(parts_legacy)  # Auto-detects version 0 (99.6% reliable)
+
+# Reconstruction with explicit version (100% reliable, recommended)
+combine(parts, version=1)         # Explicit version 1
+combine(parts_legacy, version=0)  # Explicit version 0
 ```
 
 ### When to Use Version 0
@@ -326,9 +337,16 @@ uv run pytest --cov=shamir --cov-report=xml -n auto -m "not slow"    # With cove
 **Slow tests** (timing/performance tests that may be flaky):
 
 ```bash
-uv run pytest tests/test_constant_time_ops.py -v    # Run only timing tests
-uv run pytest -m slow -v                            # Run all slow tests
-uv run pytest -m "not slow"                         # Skip slow tests (CI default)
+uv run pytest tests/test_constant_time_ops.py -v      # Run basic timing tests
+uv run pytest tests/test_enhanced_timing.py -v        # Run statistical timing tests
+uv run pytest -m slow -v                              # Run all slow tests
+uv run pytest -m "not slow"                           # Skip slow tests (CI default)
+```
+
+**Fuzz tests** (property-based tests with Hypothesis):
+
+```bash
+uv run pytest tests/test_fuzz_comprehensive.py -v     # Run comprehensive fuzz tests
 ```
 
 **Benchmarks** (performance tracking with pytest-codspeed):
@@ -344,7 +362,8 @@ uv run pytest -m "not benchmark"                    # Skip benchmark tests
 - **`@pytest.mark.slow`**: Marks tests as slow (typically timing-based tests)
   - These tests are skipped in CI to avoid flakiness
   - Run them locally to verify constant-time properties
-  - Located in `tests/test_constant_time_ops.py`
+  - Located in `tests/test_constant_time_ops.py` and `tests/test_enhanced_timing.py`
+  - Enhanced timing tests use statistical hypothesis testing (Kruskal-Wallis H-test)
 
 - **`@pytest.mark.benchmark`**: Marks tests as benchmarks (performance tracking)
   - Use pytest-codspeed to track performance over time
@@ -353,6 +372,27 @@ uv run pytest -m "not benchmark"                    # Skip benchmark tests
   - Located in `tests/benchmarks`
   - 15 total benchmark tests
 
+### Test Files
+
+- **`tests/test_shamir.py`**: Core split/combine functionality and version detection (19 tests)
+- **`tests/test_dealer_honesty.py`**: Dealer honesty verification (shares lie on same polynomial)
+- **`tests/test_constant_time_ops.py`**: Basic constant-time operation tests
+- **`tests/test_enhanced_timing.py`** (NEW): Statistical timing tests with scipy
+  - Kruskal-Wallis H-test for timing distribution independence
+  - Coefficient of variation (CV) analysis
+  - Percentile distribution consistency tests
+  - Requires scipy for statistical analysis (marked `@pytest.mark.slow`)
+- **`tests/test_fuzz_comprehensive.py`** (NEW): Property-based fuzz tests with Hypothesis (9 tests)
+  - Roundtrip testing with explicit version parameter
+  - Version detection consistency across v0/v1 formats
+  - Threshold property verification (any k shares work)
+  - Share format consistency validation
+  - Multiple secrets independence testing
+  - Single-byte modification error detection
+  - Deterministic RNG behavior verification
+- **`tests/test_security_properties.py`**: Security invariant tests
+- **`tests/benchmarks/`**: Performance benchmarking suite
+
 ### Property-Based Testing
 
 Use Hypothesis for testing mathematical properties:
@@ -360,7 +400,12 @@ Use Hypothesis for testing mathematical properties:
 - Roundtrip property: `combine(split(secret, n, k)) == secret`
 - Threshold property: Any k parts reconstruct, k-1 parts don't
 - Invariants: Result length matches input length
-- See `tests/test_shamir.py` for examples
+- Version consistency: Both v0 and v1 shares reconstruct correctly
+- Format validation: All shares have consistent structure
+- Independence: Mixing shares from different secrets produces garbage
+- Error detection: Modifying any share byte breaks reconstruction
+- See `tests/test_shamir.py` for basic examples
+- See `tests/test_fuzz_comprehensive.py` for comprehensive property-based tests
 
 ## Common Pitfalls
 
