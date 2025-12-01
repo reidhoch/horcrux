@@ -18,7 +18,7 @@ from shamir.math import add, div, mul
 
 
 class TestDealerHonesty:
-    """Test that split() produces consistent, valid shares."""
+    """Test that split(, version=1) produces consistent, valid shares."""
 
     def test_all_threshold_subsets_reconstruct_same_secret(self) -> None:
         """Test that all threshold-sized subsets reconstruct the original secret.
@@ -31,14 +31,14 @@ class TestDealerHonesty:
         threshold = 3
         num_parts = 5
 
-        parts = split(secret, num_parts, threshold, rng=Random(42))
+        parts = split(secret, num_parts, threshold, rng=Random(42), version=1)
 
         # Get all possible threshold-sized subsets
         all_subsets = list(itertools.combinations(parts, threshold))
 
         # Every subset should reconstruct to the same secret
         for subset in all_subsets:
-            reconstructed = combine(list(subset))
+            reconstructed = combine(list(subset), version=1)
             assert reconstructed == secret, (
                 f"Subset {[p[-1] for p in subset]} reconstructed to different secret"
             )
@@ -49,7 +49,7 @@ class TestDealerHonesty:
         threshold = 3
         num_parts = 6
 
-        parts = split(secret, num_parts, threshold, rng=Random(123))
+        parts = split(secret, num_parts, threshold, rng=Random(123), version=1)
 
         # Test threshold+1 and threshold+2 sized subsets
         for subset_size in [threshold, threshold + 1, threshold + 2, num_parts]:
@@ -60,7 +60,7 @@ class TestDealerHonesty:
             sampled_subsets = Random(456).sample(subsets, sample_size)
 
             for subset in sampled_subsets:
-                reconstructed = combine(list(subset))
+                reconstructed = combine(list(subset), version=1)
                 assert reconstructed == secret, (
                     f"Subset of size {subset_size} reconstructed to different secret"
                 )
@@ -79,14 +79,14 @@ class TestDealerHonesty:
     ) -> None:
         """Test dealer honesty for various (k,n) threshold schemes."""
         secret = b"X" * 20
-        parts = split(secret, num_parts, threshold, rng=Random(789))
+        parts = split(secret, num_parts, threshold, rng=Random(789), version=1)
 
         # Test 5 random threshold-sized subsets
         all_subsets = list(itertools.combinations(parts, threshold))
         sampled_subsets = Random(101112).sample(all_subsets, min(5, len(all_subsets)))
 
         for subset in sampled_subsets:
-            reconstructed = combine(list(subset))
+            reconstructed = combine(list(subset), version=1)
             assert reconstructed == secret
 
     @given(
@@ -105,7 +105,7 @@ class TestDealerHonesty:
         if threshold > num_parts:
             threshold = num_parts
 
-        parts = split(secret, num_parts, threshold)
+        parts = split(secret, num_parts, threshold, version=1)
 
         # Test 3 random threshold-sized subsets
         all_subsets = list(itertools.combinations(parts, threshold))
@@ -116,7 +116,7 @@ class TestDealerHonesty:
         sampled_subsets = rng.sample(all_subsets, num_samples)
 
         for subset in sampled_subsets:
-            reconstructed = combine(list(subset))
+            reconstructed = combine(list(subset), version=1)
             assert reconstructed == secret
 
     def test_shares_lie_on_single_polynomial(self) -> None:
@@ -130,7 +130,7 @@ class TestDealerHonesty:
         threshold = 3
         num_parts = 5
 
-        parts = split(secret, num_parts, threshold, rng=Random(999))
+        parts = split(secret, num_parts, threshold, rng=Random(999), version=1)
 
         # Extract x and y coordinates for the first byte
         # Note: Version 1 format is [version, y_values..., x_coord]
@@ -180,7 +180,7 @@ class TestDealerHonesty:
         threshold = 3
         num_parts = 5
 
-        parts = split(secret, num_parts, threshold, rng=Random(2468))
+        parts = split(secret, num_parts, threshold, rng=Random(2468), version=1)
 
         # Extract coordinates for first byte
         # Note: Version 1 format is [version, y_values..., x_coord]
@@ -223,7 +223,7 @@ class TestDealerHonesty:
         threshold = 4
         num_parts = 7
 
-        parts = split(secret, num_parts, threshold, rng=Random(13579))
+        parts = split(secret, num_parts, threshold, rng=Random(13579), version=1)
 
         # Get all threshold-sized subsets
         all_subsets = list(itertools.combinations(parts, threshold))
@@ -232,7 +232,7 @@ class TestDealerHonesty:
         reconstruction_results = set()
 
         for subset in all_subsets:
-            reconstructed = combine(list(subset))
+            reconstructed = combine(list(subset), version=1)
             reconstruction_results.add(bytes(reconstructed))
 
         # All subsets must produce the exact same result
@@ -246,7 +246,7 @@ class TestDealerHonesty:
 
 
 class TestDishonestDealerDetection:
-    """Test that combine() behaves predictably with inconsistent shares.
+    """Test that combine(, version=1) behaves predictably with inconsistent shares.
 
     These tests verify how the system handles potentially malicious or corrupted
     shares that don't lie on a consistent polynomial.
@@ -257,13 +257,13 @@ class TestDishonestDealerDetection:
 
         This demonstrates that if someone tries to create inconsistent shares,
         the reconstruction will fail to produce the expected secret (though it
-        won't necessarily raise an error, as combine() can't detect dishonesty).
+        won't necessarily raise an error, as combine(, version=1) can't detect dishonesty).
         """
         secret = b"X"
         threshold = 3
 
         # Create legitimate shares
-        parts = split(secret, 5, threshold, rng=Random(24680))
+        parts = split(secret, 5, threshold, rng=Random(24680), version=1)
 
         # Corrupt one share by flipping bits in the y-value
         corrupted_parts = [bytearray(p) for p in parts[:threshold]]
@@ -272,7 +272,7 @@ class TestDishonestDealerDetection:
         corrupted_parts[0][1] ^= 0xFF  # Flip all bits in y-value
 
         # Reconstruction will produce garbage, not the original secret
-        reconstructed = combine(corrupted_parts)
+        reconstructed = combine(corrupted_parts, version=1)
 
         assert reconstructed != secret, (
             "Corrupted shares should not reconstruct to original secret"
@@ -289,13 +289,13 @@ class TestDishonestDealerDetection:
         threshold = 3
         num_parts = 5
 
-        parts1 = split(secret1, num_parts, threshold, rng=Random(111))
-        parts2 = split(secret2, num_parts, threshold, rng=Random(222))
+        parts1 = split(secret1, num_parts, threshold, rng=Random(111), version=1)
+        parts2 = split(secret2, num_parts, threshold, rng=Random(222), version=1)
 
         # Mix shares: 2 from first split, 1 from second split
         mixed_parts = parts1[:2] + parts2[:1]
 
-        reconstructed = combine(mixed_parts)
+        reconstructed = combine(mixed_parts, version=1)
 
         # Should not reconstruct to either original secret
         assert reconstructed != secret1

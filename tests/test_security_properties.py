@@ -27,7 +27,7 @@ class TestSecurityProperties:
         original_secret = b"X"  # Single byte: 0x58 (88 decimal)
 
         # Create shares for the original secret
-        parts = split(original_secret, 5, threshold, rng=Random(12345))
+        parts = split(original_secret, 5, threshold, rng=Random(12345), version=1)
 
         # Take k-1 shares (insufficient for unique reconstruction)
         insufficient_parts = parts[: threshold - 1]
@@ -114,7 +114,7 @@ class TestSecurityProperties:
 
             # Verify: combining insufficient parts + completing share reconstructs target
             all_parts = insufficient_parts + [completing_share]
-            reconstructed = combine(all_parts)
+            reconstructed = combine(all_parts, version=1)
 
             assert reconstructed == target_secret, (
                 f"Failed to reconstruct target {target_byte} from insufficient parts. "
@@ -152,26 +152,26 @@ class TestSecurityProperties:
             variations.append(bytes(modified))
 
         # Split each variation
-        base_parts = split(base_secret, 5, 3, rng=Random(123))
+        base_parts = split(base_secret, 5, 3, rng=Random(123), version=1)
 
         for variation in variations:
-            var_parts = split(variation, 5, 3, rng=Random(123))
+            var_parts = split(variation, 5, 3, rng=Random(123), version=1)
             # Parts should be different for different secrets
             assert var_parts != base_parts
             # But each should reconstruct correctly
-            assert combine(var_parts[:3]) == variation
+            assert combine(var_parts[:3], version=1) == variation
 
     def test_part_independence(self) -> None:
         """Test that parts are independently useful."""
         secret = b"independence_test"
-        parts = split(secret, 6, 3, rng=Random(789))
+        parts = split(secret, 6, 3, rng=Random(789), version=1)
 
         # Any 3 parts should work
         from itertools import combinations
 
         for combo in combinations(range(6), 3):
             selected_parts = [parts[i] for i in combo]
-            reconstructed = combine(selected_parts)
+            reconstructed = combine(selected_parts, version=1)
             assert reconstructed == secret
 
     def test_no_information_leakage_from_part_count(self) -> None:
@@ -179,7 +179,7 @@ class TestSecurityProperties:
         secrets = [b"a", b"ab", b"abc", b"abcd"]
 
         for secret in secrets:
-            parts = split(secret, 5, 3, rng=Random(456))
+            parts = split(secret, 5, 3, rng=Random(456), version=1)
             assert len(parts) == 5  # Should always be the requested number
             for part in parts:
                 # Part length should be secret length + 2 (version + y-values + x-coordinate)
@@ -196,7 +196,7 @@ class TestErrorConditions:
             ValueError,
             match="At least two parts are required to reconstruct the secret",
         ):
-            combine([])
+            combine([], version=1)
 
         # Test single part
         with pytest.raises(
@@ -217,7 +217,7 @@ class TestErrorConditions:
         part1 = bytearray(b"abc")
         part2 = bytearray(b"abc")  # Same content = same x-coordinate
         with pytest.raises(ValueError, match="Duplicate part detected"):
-            combine([part1, part2])
+            combine([part1, part2], version=1)
 
     def test_split_error_messages(self) -> None:
         """Test that split error messages are exactly as expected."""
@@ -225,38 +225,38 @@ class TestErrorConditions:
 
         # Test parts < threshold
         with pytest.raises(ValueError, match="Parts cannot be less than threshold"):
-            split(secret, 2, 3)
+            split(secret, 2, 3, version=1)
 
         # Test parts > 255
         with pytest.raises(ValueError, match="Parts cannot exceed 255"):
-            split(secret, 256, 3)
+            split(secret, 256, 3, version=1)
 
         # Test threshold > 255
         with pytest.raises(ValueError, match="Threshold cannot exceed 255"):
-            split(secret, 254, 256)  # Both exceed 255
+            split(secret, 254, 256, version=1)  # Both exceed 255
 
         # Test threshold < 2
         with pytest.raises(ValueError, match="Threshold must be at least 2"):
-            split(secret, 5, 1)
+            split(secret, 5, 1, version=1)
 
         # Test empty secret
         with pytest.raises(ValueError, match="Cannot split an empty secret"):
-            split(b"", 3, 2)
+            split(b"", 3, 2, version=1)
 
     def test_boundary_values(self) -> None:
         """Test boundary values for parameters."""
         secret = b"boundary_test"
 
         # Minimum valid values
-        parts = split(secret, 2, 2, rng=Random(123))
+        parts = split(secret, 2, 2, rng=Random(123), version=1)
         assert len(parts) == 2
-        reconstructed = combine(parts)
+        reconstructed = combine(parts, version=1)
         assert reconstructed == secret
 
         # Test with a reasonable high number (avoiding collision issues)
-        parts = split(secret, 20, 20, rng=Random(456))
+        parts = split(secret, 20, 20, rng=Random(456), version=1)
         assert len(parts) == 20
-        reconstructed = combine(parts)
+        reconstructed = combine(parts, version=1)
         assert reconstructed == secret
 
 
@@ -271,11 +271,11 @@ class TestPerformance:
         large_secret = b"X" * (1024 * 1024)
 
         start_time = time.time()
-        parts = split(large_secret, 5, 3, rng=Random(123))
+        parts = split(large_secret, 5, 3, rng=Random(123), version=1)
         split_time = time.time() - start_time
 
         start_time = time.time()
-        reconstructed = combine(parts[:3])
+        reconstructed = combine(parts[:3], version=1)
         combine_time = time.time() - start_time
 
         assert reconstructed == large_secret
@@ -290,11 +290,11 @@ class TestPerformance:
         import time
 
         start_time = time.time()
-        parts = split(secret, 15, 15, rng=Random(123))
+        parts = split(secret, 15, 15, rng=Random(123), version=1)
         split_time = time.time() - start_time
 
         start_time = time.time()
-        reconstructed = combine(parts)
+        reconstructed = combine(parts, version=1)
         combine_time = time.time() - start_time
 
         assert reconstructed == secret

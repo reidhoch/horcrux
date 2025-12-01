@@ -216,7 +216,7 @@ def _compute_lagrange_basis(x_samples: bytearray) -> bytearray:
     return basis_values
 
 
-def _detect_share_version(parts: Shares) -> int:
+def _detect_share_version(parts: Shares) -> int:  # noqa: PLR0911
     """Detect the version of shares using improved heuristics.
 
     Version 1 shares have a version byte (0x01) as the first byte. Version 0
@@ -225,9 +225,11 @@ def _detect_share_version(parts: Shares) -> int:
 
     Detection strategy:
     1. Check if shares have different lengths → definitely mixed (error)
-    2. Check if ALL shares start with 0x01 → version 1
-    3. Check if NONE start with 0x01 → version 0
-    4. If SOME start with 0x01:
+    2. Length-based heuristic: shares with only 2 bytes MUST be legacy
+       (version 1 requires minimum 3 bytes: [version, y_value, x_coord])
+    3. Check if ALL shares start with 0x01 → version 1
+    4. Check if NONE start with 0x01 → version 0
+    5. If SOME start with 0x01:
        - Check all shares (not just sample) to distinguish:
          * If truly split 50/50 across ALL shares → likely intentional mixing
          * If split is due to sampling → likely false positives in v0 shares
@@ -257,6 +259,23 @@ def _detect_share_version(parts: Shares) -> int:
         if part[0] == SHARE_VERSION_1:
             shares_starting_with_01 += 1
 
+    # Length-based heuristic: Version 1 requires minimum 3 bytes
+    # [version_byte, y_value, x_coord]. If shares are only 2 bytes,
+    # they MUST be legacy format, regardless of first byte value.
+    # This prevents false positives when legacy shares' first y-value is 0x01.
+    if first_length == MIN_PART_LENGTH:
+        return SHARE_VERSION_LEGACY
+
+    # For 3-byte shares, if ALL start with 0x01, it's ambiguous:
+    # - Could be version 1 with 1-byte secret: [0x01, y0, x_coord]
+    # - Could be legacy with 2-byte secret starting with 0x01: [0x01, y1, x_coord]
+    # Conservative approach: default to legacy to avoid false positives.
+    # Users can pass explicit version=1 parameter if needed.
+    if first_length == MIN_PART_LENGTH_VERSIONED and shares_starting_with_01 == len(
+        parts
+    ):
+        return SHARE_VERSION_LEGACY
+
     # If ALL shares start with 0x01, they're version 1
     if shares_starting_with_01 == len(parts):
         return SHARE_VERSION_1
@@ -281,6 +300,8 @@ def _detect_share_version(parts: Shares) -> int:
     # Otherwise, treat as version 0 with some false positives (if ratio < 40%)
     # or use majority voting for version 1 (if ratio >= 60%)
     # For 2 shares, always treat ambiguous cases as version 0
+    if ratio >= 0.60:  # noqa: PLR2004
+        return SHARE_VERSION_1
     return SHARE_VERSION_LEGACY
 
 
