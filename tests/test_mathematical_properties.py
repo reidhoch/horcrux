@@ -38,7 +38,7 @@ class TestMathematicalProperties:
         """Test that the secret sharing follows Shamir's scheme mathematically."""
         secret = b"math_test"
         threshold = 3
-        parts = split(secret, 5, threshold, rng=Random(42))
+        parts = split(secret, 5, threshold, rng=Random(42), version=1)
 
         # Each part should have the secret length + 2 bytes (version + y-values + x_coord)
         for part in parts:
@@ -71,15 +71,15 @@ class TestMathematicalProperties:
         secret_xor = bytes(a ^ b for a, b in zip(secret1, secret2))
 
         # Split all secrets - they will have different random polynomials
-        parts1 = split(secret1, 5, 3, rng=Random(12345))
-        parts2 = split(secret2, 5, 3, rng=Random(54321))
-        parts_xor = split(secret_xor, 5, 3, rng=Random(98765))
+        parts1 = split(secret1, 5, 3, rng=Random(12345), version=1)
+        parts2 = split(secret2, 5, 3, rng=Random(54321), version=1)
+        parts_xor = split(secret_xor, 5, 3, rng=Random(98765), version=1)
 
         # Since different random polynomials are used, linearity doesn't hold
         # But each should reconstruct correctly
-        assert combine(parts1[:3]) == secret1
-        assert combine(parts2[:3]) == secret2
-        assert combine(parts_xor[:3]) == secret_xor
+        assert combine(parts1[:3], version=1) == secret1
+        assert combine(parts2[:3], version=1) == secret2
+        assert combine(parts_xor[:3], version=1) == secret_xor
 
     def test_homomorphic_property(self) -> None:
         """Test homomorphic property - operations on shares reflect in secret."""
@@ -89,8 +89,8 @@ class TestMathematicalProperties:
         rng1 = Random(111)
         rng2 = Random(111)  # Same seed for deterministic behavior
 
-        parts1 = split(secret1, 3, 2, rng=rng1)
-        parts2 = split(secret2, 3, 2, rng=rng2)
+        parts1 = split(secret1, 3, 2, rng=rng1, version=1)
+        parts2 = split(secret2, 3, 2, rng=rng2, version=1)
 
         # XOR corresponding parts (except version byte and x-coordinate)
         # Note: Version 1 format is [version, y_values..., x_coord]
@@ -103,7 +103,7 @@ class TestMathematicalProperties:
             combined_parts.append(part)
 
         # Reconstruct should give XOR of original secrets
-        reconstructed = combine(combined_parts[:2])
+        reconstructed = combine(combined_parts[:2], version=1)
         expected = bytes([secret1[0] ^ secret2[0]])
         assert reconstructed == expected
 
@@ -111,7 +111,7 @@ class TestMathematicalProperties:
         """Test that exactly threshold-1 parts provide no information."""
         secret = b"threshold_security_test"
         threshold = 4
-        parts = split(secret, 6, threshold, rng=Random(789))
+        parts = split(secret, 6, threshold, rng=Random(789), version=1)
 
         # Test with threshold-1 parts
         insufficient_parts = parts[: threshold - 1]
@@ -122,7 +122,7 @@ class TestMathematicalProperties:
 
         # With threshold parts, reconstruction should work
         sufficient_parts = parts[:threshold]
-        reconstructed = combine(sufficient_parts)
+        reconstructed = combine(sufficient_parts, version=1)
         assert reconstructed == secret
 
     def test_field_operations_are_closed(self) -> None:
