@@ -74,6 +74,51 @@ def test_combine_mixed_version_shares() -> None:
         combine(mixed_parts)
 
 
+def test_split_secret_exceeds_max_size() -> None:
+    """Test split rejects secrets larger than MAX_SECRET_SIZE (100MB)."""
+    large_secret = b"a" * (100 * (2**20) + 1)  # 100MB + 1 byte
+    with pytest.raises(ValueError, match=Error.SECRET_EXCEEDS_MAX_SIZE):
+        split(large_secret, 5, 3)
+
+
+def test_version_detection_low_ratio_returns_legacy() -> None:
+    """Test version detection returns legacy when < 40% shares start with 0x01."""
+    from shamir import _detect_share_version
+
+    # Create shares where only 1 out of 5 starts with 0x01 (20%)
+    # These are 4-byte shares (not ambiguous 3-byte case)
+    parts = [
+        bytearray([0x01, 0x42, 0x50, 0x10]),  # Starts with 0x01
+        bytearray([0x55, 0x43, 0x60, 0x20]),  # Does NOT start with 0x01
+        bytearray([0x66, 0x44, 0x70, 0x30]),  # Does NOT start with 0x01
+        bytearray([0x77, 0x45, 0x80, 0x40]),  # Does NOT start with 0x01
+        bytearray([0x88, 0x46, 0x90, 0x50]),  # Does NOT start with 0x01
+    ]
+
+    # Should detect as version 0 (legacy) since ratio is 20% (< 40%)
+    assert _detect_share_version(parts) == 0
+
+
+def test_version_detection_rejects_mixed_lengths() -> None:
+    """Test _detect_share_version rejects shares with different lengths.
+
+    This tests defensive programming in _detect_share_version. In normal usage,
+    combine() catches length mismatches first, but this ensures _detect_share_version
+    is robust when called directly.
+    """
+    from shamir import _detect_share_version
+
+    # Mix shares with different lengths (3 vs 4 bytes)
+    mixed_parts = [
+        bytearray([0x01, 0x42, 0x10]),      # 3 bytes
+        bytearray([0x55, 0x43, 0x60, 0x20]),  # 4 bytes
+    ]
+
+    # Should raise MIXED_SHARE_VERSIONS error
+    with pytest.raises(ValueError, match=Error.MIXED_SHARE_VERSIONS):
+        _detect_share_version(mixed_parts)
+
+
 def test_split() -> None:
     secret: bytes = b"test"
     out: list[bytearray] = split(secret, 5, 3, rng=Random(54321))
