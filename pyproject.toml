@@ -54,6 +54,7 @@ examples = ["typer>=0.16,<0.21"]
 
 [tool.hatch.version]
 source = "vcs"
+fallback-version = "0.0.0"
 
 [tool.hatch.build.hooks.vcs]
 version-file = "shamir/_version.py"
