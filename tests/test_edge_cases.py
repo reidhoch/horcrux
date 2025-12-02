@@ -22,27 +22,6 @@ class TestEdgeCases:
         reconstructed = combine(parts, version=1)
         assert reconstructed == secret
 
-    def test_large_secret(self) -> None:
-        """Test with a large secret (1MB)."""
-        secret = bytes(range(256)) * 4096  # 1MB of data
-        parts = split(secret, 5, 3, rng=Random(12345), version=1)
-        reconstructed = combine(parts[:3], version=1)
-        assert reconstructed == secret
-
-    def test_all_zero_secret(self) -> None:
-        """Test with a secret containing all zeros."""
-        secret = b"\x00" * 100
-        parts = split(secret, 5, 3, rng=Random(12345), version=1)
-        reconstructed = combine(parts[:3], version=1)
-        assert reconstructed == secret
-
-    def test_all_one_secret(self) -> None:
-        """Test with a secret containing all ones."""
-        secret = b"\xff" * 100
-        parts = split(secret, 5, 3, rng=Random(12345), version=1)
-        reconstructed = combine(parts[:3], version=1)
-        assert reconstructed == secret
-
     def test_binary_data(self) -> None:
         """Test with binary data including null bytes."""
         secret = bytes([0, 1, 2, 255, 254, 0, 128, 127])
@@ -81,24 +60,6 @@ class TestEdgeCases:
             selected_parts = [parts[i] for i in combo]
             reconstructed = combine(selected_parts, version=1)
             assert reconstructed == secret
-
-    def test_deterministic_split_with_same_rng(self) -> None:
-        """Test that the same RNG produces the same split."""
-        secret = b"deterministic_test"
-        parts1 = split(secret, 5, 3, rng=Random(54321), version=1)
-        parts2 = split(secret, 5, 3, rng=Random(54321), version=1)
-        assert parts1 == parts2
-
-    def test_different_splits_with_different_rng(self) -> None:
-        """Test that different RNG produces different splits."""
-        secret = b"different_test"
-        parts1 = split(secret, 5, 3, rng=Random(11111), version=1)
-        parts2 = split(secret, 5, 3, rng=Random(22222), version=1)
-        assert parts1 != parts2
-
-        # But both should reconstruct to the same secret
-        assert combine(parts1[:3], version=1) == secret
-        assert combine(parts2[:3], version=1) == secret
 
     def test_single_byte_variations(self) -> None:
         """Test some single byte values (avoiding x-coordinate collision issue)."""

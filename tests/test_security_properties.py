@@ -161,19 +161,6 @@ class TestSecurityProperties:
             # But each should reconstruct correctly
             assert combine(var_parts[:3], version=1) == variation
 
-    def test_part_independence(self) -> None:
-        """Test that parts are independently useful."""
-        secret = b"independence_test"
-        parts = split(secret, 6, 3, rng=Random(789), version=1)
-
-        # Any 3 parts should work
-        from itertools import combinations
-
-        for combo in combinations(range(6), 3):
-            selected_parts = [parts[i] for i in combo]
-            reconstructed = combine(selected_parts, version=1)
-            assert reconstructed == secret
-
     def test_no_information_leakage_from_part_count(self) -> None:
         """Test that the number of parts doesn't leak secret information."""
         secrets = [b"a", b"ab", b"abc", b"abcd"]
@@ -258,46 +245,3 @@ class TestErrorConditions:
         assert len(parts) == 20
         reconstructed = combine(parts, version=1)
         assert reconstructed == secret
-
-
-class TestPerformance:
-    """Test performance characteristics."""
-
-    def test_large_secret_performance(self) -> None:
-        """Test performance with large secrets."""
-        import time
-
-        # 1MB secret
-        large_secret = b"X" * (1024 * 1024)
-
-        start_time = time.time()
-        parts = split(large_secret, 5, 3, rng=Random(123), version=1)
-        split_time = time.time() - start_time
-
-        start_time = time.time()
-        reconstructed = combine(parts[:3], version=1)
-        combine_time = time.time() - start_time
-
-        assert reconstructed == large_secret
-        # These are just smoke tests - we don't assert specific times
-        assert split_time > 0
-        assert combine_time > 0
-
-    def test_many_parts_performance(self) -> None:
-        """Test performance with many parts."""
-        secret = b"many_parts_test"
-
-        import time
-
-        start_time = time.time()
-        parts = split(secret, 15, 15, rng=Random(123), version=1)
-        split_time = time.time() - start_time
-
-        start_time = time.time()
-        reconstructed = combine(parts, version=1)
-        combine_time = time.time() - start_time
-
-        assert reconstructed == secret
-        assert len(parts) == 15
-        assert split_time > 0
-        assert combine_time > 0

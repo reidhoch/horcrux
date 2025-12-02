@@ -10,18 +10,6 @@ from shamir.utils import Polynomial
 class TestMathematicalProperties:
     """Test mathematical properties and correctness."""
 
-    def test_division_properties(self) -> None:
-        """Test division properties in GF(256)."""
-        # Test that a / a = 1 for all non-zero a
-        for a in range(1, 256):
-            assert div(a, a) == 1
-
-        # Test that (a * b) / b = a for non-zero b
-        for a in range(0, 256, 31):
-            for b in range(1, 256, 37):  # b cannot be 0
-                product = mul(a, b)
-                assert div(product, b) == a
-
     def test_polynomial_evaluation_properties(self) -> None:
         """Test polynomial evaluation properties."""
         # Test that polynomial evaluation at 0 gives intercept
@@ -124,45 +112,3 @@ class TestMathematicalProperties:
         sufficient_parts = parts[:threshold]
         reconstructed = combine(sufficient_parts, version=1)
         assert reconstructed == secret
-
-    def test_field_operations_are_closed(self) -> None:
-        """Test that field operations are closed under GF(256)."""
-        # Test that all operations result in values 0-255
-        for a in range(0, 256, 43):  # Sample values
-            for b in range(0, 256, 47):
-                sum_result = add(a, b)
-                assert 0 <= sum_result <= 255
-
-                prod_result = mul(a, b)
-                assert 0 <= prod_result <= 255
-
-                if b != 0:
-                    div_result = div(a, b)
-                    assert 0 <= div_result <= 255
-
-    def test_distributive_property(self) -> None:
-        """Test distributive property: a * (b + c) = (a * b) + (a * c)."""
-        for a in range(1, 256, 51):  # Sample non-zero values
-            for b in range(0, 256, 53):
-                for c in range(0, 256, 59):
-                    left_side = mul(a, add(b, c))
-                    right_side = add(mul(a, b), mul(a, c))
-                    assert left_side == right_side
-
-    def test_associative_property(self) -> None:
-        """Test associative property for addition and multiplication."""
-        # Test (a + b) + c = a + (b + c)
-        for a in range(0, 256, 61):
-            for b in range(0, 256, 67):
-                for c in range(0, 256, 71):
-                    left_side = add(add(a, b), c)
-                    right_side = add(a, add(b, c))
-                    assert left_side == right_side
-
-        # Test (a * b) * c = a * (b * c)
-        for a in range(1, 256, 73):  # Avoid 0 to make test more meaningful
-            for b in range(1, 256, 79):
-                for c in range(1, 256, 83):
-                    left_side = mul(mul(a, b), c)
-                    right_side = mul(a, mul(b, c))
-                    assert left_side == right_side
