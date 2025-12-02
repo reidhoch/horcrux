@@ -67,13 +67,14 @@ def mul(a: int, b: int) -> int:
     """Constant-time multiplication using bit-masking."""
     result: int = 0
 
-    for i in reversed(range(8)):
-        result = result << 1
-        overflow_mask = -((result >> 8) & 1)  # All 1s if overflow, else 0s
-        result ^= 0x11B & overflow_mask
-        result &= 0xFF
+    # Process each bit of b from MSB to LSB
+    for _ in range(8):
+        # Shift and reduce
+        high_bit = (result >> 7) & 1
+        result = ((result << 1) ^ (0x1B * high_bit)) & 0xFF
 
-        bit_mask = -((b >> i) & 1)  # All 1s if bit set, else 0s
-        result ^= a & bit_mask  # No conditional branching
+        # Conditionally XOR a based on MSB of b
+        result ^= a * ((b >> 7) & 1)
+        b = (b << 1) & 0xFF
 
     return result
