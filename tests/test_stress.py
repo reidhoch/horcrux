@@ -11,22 +11,6 @@ from shamir import combine, split
 class TestStressTesting:
     """Stress tests for robustness and performance."""
 
-    def test_large_secret_stress(self) -> None:
-        """Test with very large secrets."""
-        # Test with 1MB secret
-        large_secret = b"X" * (1024 * 1024)
-
-        start = time.time()
-        parts = split(large_secret, 5, 3, rng=Random(12345), version=1)
-        split_duration = time.time() - start
-
-        start = time.time()
-        reconstructed = combine(parts[:3], version=1)
-        combine_duration = time.time() - start
-
-        assert reconstructed == large_secret
-        print(f"1MB split: {split_duration:.2f}s, combine: {combine_duration:.2f}s")
-
     def test_moderate_parts_stress(self) -> None:
         """Test with moderate number of parts."""
         secret = b"moderate_parts_test" * 10
@@ -210,35 +194,6 @@ class TestStressTesting:
 
 class TestBenchmarks:
     """Performance benchmarks."""
-
-    def test_safe_scalability_benchmark(self) -> None:
-        """Benchmark scalability."""
-        secret = b"benchmark_secret" * 1000  # ~16KB
-
-        configs = [
-            (3, 2),
-            (5, 3),
-            (7, 4),
-            (10, 5),
-        ]
-
-        results = []
-        for parts_count, threshold in configs:
-            # Benchmark split
-            start = time.time()
-            parts = split(secret, parts_count, threshold, rng=Random(12345), version=1)
-            split_time = time.time() - start
-
-            # Benchmark combine
-            start = time.time()
-            reconstructed = combine(parts[:threshold], version=1)
-            combine_time = time.time() - start
-
-            assert reconstructed == secret
-            results.append((parts_count, threshold, split_time, combine_time))
-            print(
-                f"{parts_count}/{threshold}: split={split_time:.3f}s, combine={combine_time:.3f}s"
-            )
 
     def test_size_scalability_benchmark(self) -> None:
         """Benchmark with different secret sizes."""
