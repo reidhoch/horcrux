@@ -19,6 +19,16 @@ def test_div_zero() -> None:
         assert div(7, 0) == 0
 
 
+def test_div_zero_numerator() -> None:
+    """Test that div(0, b) always returns 0 for any non-zero b.
+
+    This verifies the constant-time zero-masking logic in div() that ensures
+    0/b = 0 without branching on secret data. Critical for timing attack resistance.
+    """
+    for b in range(1, 256):
+        assert div(0, b) == 0
+
+
 def test_inverse_zero() -> None:
     with pytest.raises(ArithmeticError):
         assert inverse(0)

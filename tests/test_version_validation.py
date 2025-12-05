@@ -125,3 +125,131 @@ class TestMixedVersionDetection:
         # It will use majority voting (1 v1 vote vs 2 v0 votes) -> detects as v0
         result = combine(mixed_parts)
         assert result is not None  # Just verify it returned something
+
+    def test_two_shares_with_50_percent_ratio_no_error(self) -> None:
+        """Test that 2 shares with 50% ratio does NOT raise error.
+
+        With only 2 shares, a 50/50 split is ambiguous and cannot be reliably
+        distinguished from v0 shares where one y-value happens to be 0x01.
+        The mixing detection only applies to 3+ shares.
+        """
+        secret = b"XY"
+        v1_parts = split(secret, 5, 3, rng=Random(123), version=1)
+
+        # Craft one fake v0 share
+        fake_v0_part = bytearray(v1_parts[1])
+        fake_v0_part[0] = 0x42
+
+        # Mix: 1 v1 share + 1 fake v0 share = 2 shares with 50% ratio
+        mixed_parts = [v1_parts[0], fake_v0_part]
+
+        # This should NOT raise MIXED_SHARE_VERSIONS error (only 2 shares)
+        result = combine(mixed_parts)
+        assert result is not None  # Just verify it returned something
+
+    def test_ten_shares_with_50_percent_ratio_raises_error(self) -> None:
+        """Test that 10 shares with 50% ratio raises MIXED_SHARE_VERSIONS error.
+
+        With 10 shares in a perfect 50/50 split (5 v1, 5 fake v0), this clearly
+        indicates intentional mixing rather than random false positives.
+        """
+        secret = b"XY"
+        v1_parts = split(secret, 10, 3, rng=Random(123), version=1)
+
+        # Craft 5 fake v0 shares
+        fake_v0_parts = []
+        for i in range(5):
+            fake_v0_part = bytearray(v1_parts[i + 5])
+            fake_v0_part[0] = 0x42 + i
+            fake_v0_parts.append(fake_v0_part)
+
+        # Mix: 5 v1 shares + 5 fake v0 shares = 10 shares with 50% ratio
+        mixed_parts = v1_parts[:5] + fake_v0_parts
+
+        # This SHOULD raise MIXED_SHARE_VERSIONS error (ratio = 5/10 = 50%)
+        with pytest.raises(
+            ValueError,
+            match=Error.MIXED_SHARE_VERSIONS,
+        ):
+            combine(mixed_parts)
+
+    def test_five_shares_with_40_percent_ratio_raises_error(self) -> None:
+        """Test that 5 shares with 40% ratio raises MIXED_SHARE_VERSIONS error.
+
+        With 5 shares where 2 are v1 (40%), this is at the lower boundary
+        of the 40%-60% detection range and should raise an error.
+        """
+        secret = b"XY"
+        v1_parts = split(secret, 5, 3, rng=Random(123), version=1)
+
+        # Craft 3 fake v0 shares
+        fake_v0_parts = []
+        for i in range(3):
+            fake_v0_part = bytearray(v1_parts[i + 2])
+            fake_v0_part[0] = 0x42 + i
+            fake_v0_parts.append(fake_v0_part)
+
+        # Mix: 2 v1 shares + 3 fake v0 shares = 5 shares with 40% ratio
+        mixed_parts = [v1_parts[0], v1_parts[1]] + fake_v0_parts
+
+        # This SHOULD raise MIXED_SHARE_VERSIONS error (ratio = 2/5 = 40%)
+        with pytest.raises(
+            ValueError,
+            match=Error.MIXED_SHARE_VERSIONS,
+        ):
+            combine(mixed_parts)
+
+    def test_five_shares_with_60_percent_ratio_no_error(self) -> None:
+        """Test that 5 shares with 60% ratio uses majority voting.
+
+        With 5 shares where 3 are v1 (60%), this is at the upper boundary
+        (exclusive) of the 40%-60% detection range. Since ratio >= 0.60,
+        it should use majority voting for version 1 instead of raising an error.
+        """
+        secret = b"XY"
+        v1_parts = split(secret, 5, 3, rng=Random(123), version=1)
+
+        # Craft 2 fake v0 shares
+        fake_v0_part1 = bytearray(v1_parts[3])
+        fake_v0_part1[0] = 0x42
+        fake_v0_part2 = bytearray(v1_parts[4])
+        fake_v0_part2[0] = 0x43
+
+        # Mix: 3 v1 shares + 2 fake v0 shares = 5 shares with 60% ratio
+        mixed_parts = [
+            v1_parts[0],
+            v1_parts[1],
+            v1_parts[2],
+            fake_v0_part1,
+            fake_v0_part2,
+        ]
+
+        # This should NOT raise MIXED_SHARE_VERSIONS error (ratio = 3/5 = 60%)
+        # It will use majority voting for version 1
+        result = combine(mixed_parts)
+        assert result is not None  # Just verify it returned something
+
+    def test_exactly_one_share_starts_with_01(self) -> None:
+        """Test detection when exactly 1 out of many shares starts with 0x01.
+
+        This tests the boundary between "none start with 0x01" and
+        "some start with 0x01" logic. With only 1 out of 5 shares (20%),
+        it should be detected as legacy with a false positive.
+        """
+        secret = b"XY"
+        v1_parts = split(secret, 5, 3, rng=Random(123), version=1)
+
+        # Craft 4 fake v0 shares (80% fake v0)
+        fake_v0_parts = []
+        for i in range(4):
+            fake_v0_part = bytearray(v1_parts[i + 1])
+            fake_v0_part[0] = 0x42 + i
+            fake_v0_parts.append(fake_v0_part)
+
+        # Mix: 1 v1 share + 4 fake v0 shares = 5 shares with 20% ratio
+        mixed_parts = [v1_parts[0]] + fake_v0_parts
+
+        # This should NOT raise MIXED_SHARE_VERSIONS error (ratio = 1/5 = 20% < 40%)
+        # It will be detected as version 0 (legacy)
+        result = combine(mixed_parts)
+        assert result is not None  # Just verify it returned something

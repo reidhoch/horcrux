@@ -94,6 +94,7 @@ class TestDealerHonesty:
         num_parts=st.integers(min_value=3, max_value=10),
         threshold=st.integers(min_value=2, max_value=5),
     )
+    @pytest.mark.hypothesis
     def test_consistency_property_based(
         self, secret: bytes, num_parts: int, threshold: int
     ) -> None:

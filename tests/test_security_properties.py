@@ -245,3 +245,16 @@ class TestErrorConditions:
         assert len(parts) == 20
         reconstructed = combine(parts, version=1)
         assert reconstructed == secret
+
+        # Maximum valid values (parts=255 and threshold=255 are both accepted)
+        # Test parts=255 with lower threshold
+        parts_max = split(secret, 255, 3, rng=Random(789), version=1)
+        assert len(parts_max) == 255
+        reconstructed_max = combine(parts_max[:3], version=1)
+        assert reconstructed_max == secret
+
+        # Test threshold=255 (must also have parts=255)
+        parts_max_threshold = split(secret, 255, 255, rng=Random(999), version=1)
+        assert len(parts_max_threshold) == 255
+        reconstructed_max_threshold = combine(parts_max_threshold, version=1)
+        assert reconstructed_max_threshold == secret

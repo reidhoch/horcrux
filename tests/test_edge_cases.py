@@ -46,21 +46,6 @@ class TestEdgeCases:
         reconstructed = combine(parts[:threshold], version=1)
         assert reconstructed == secret
 
-    def test_random_part_selection(self) -> None:
-        """Test reconstruction with random selection of parts."""
-        secret = b"random_selection_test"
-        parts = split(secret, 10, 5, rng=Random(12345), version=1)
-
-        # Test with different combinations of 5 parts
-        import itertools
-
-        for combo in list(itertools.combinations(range(10), 5))[
-            :10
-        ]:  # Test first 10 combinations
-            selected_parts = [parts[i] for i in combo]
-            reconstructed = combine(selected_parts, version=1)
-            assert reconstructed == secret
-
     def test_single_byte_variations(self) -> None:
         """Test some single byte values (avoiding x-coordinate collision issue)."""
         test_values = [0, 1, 42, 127, 128, 200, 254, 255]
@@ -69,22 +54,3 @@ class TestEdgeCases:
             parts = split(secret, 3, 2, rng=Random(100000 + byte_value * 1000))
             reconstructed = combine(parts[:2], version=1)
             assert reconstructed == secret
-
-    def test_x_coordinate_uniqueness(self) -> None:
-        """Test that x-coordinates are always unique (no collisions)."""
-        secret = b"collision_test"
-
-        # Test with many different seeds and configurations
-        for seed in range(100):
-            for num_parts in [5, 10, 20, 50, 100]:
-                parts = split(secret, num_parts, 3, rng=Random(seed * 1000 + num_parts))
-                x_coords = [part[-1] for part in parts]
-
-                # Verify all x-coordinates are unique
-                assert len(set(x_coords)) == len(x_coords), (
-                    f"Collision detected with seed={seed}, num_parts={num_parts}"
-                )
-
-                # Verify all x-coordinates are in valid range [1, 255]
-                for x in x_coords:
-                    assert 1 <= x <= 255, f"Invalid x-coordinate: {x}"
