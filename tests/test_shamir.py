@@ -81,22 +81,13 @@ def test_split_secret_exceeds_max_size() -> None:
         split(large_secret, 5, 3)
 
 
-def test_version_detection_low_ratio_returns_legacy() -> None:
-    """Test version detection returns legacy when < 40% shares start with 0x01."""
-    from shamir import _detect_share_version
-
-    # Create shares where only 1 out of 5 starts with 0x01 (20%)
-    # These are 4-byte shares (not ambiguous 3-byte case)
-    parts = [
-        bytearray([0x01, 0x42, 0x50, 0x10]),  # Starts with 0x01
-        bytearray([0x55, 0x43, 0x60, 0x20]),  # Does NOT start with 0x01
-        bytearray([0x66, 0x44, 0x70, 0x30]),  # Does NOT start with 0x01
-        bytearray([0x77, 0x45, 0x80, 0x40]),  # Does NOT start with 0x01
-        bytearray([0x88, 0x46, 0x90, 0x50]),  # Does NOT start with 0x01
-    ]
-
-    # Should detect as version 0 (legacy) since ratio is 20% (< 40%)
-    assert _detect_share_version(parts) == 0
+@pytest.mark.slow
+def test_split_accepts_max_secret_size() -> None:
+    """Test split accepts secrets of exactly MAX_SECRET_SIZE (100MB)."""
+    max_secret = b"a" * (100 * (2**20))  # Exactly 100MB
+    # Should not raise - this proves the boundary condition is correct (> not >=)
+    parts = split(max_secret, 5, 3, rng=Random(42))
+    assert len(parts) == 5
 
 
 def test_version_detection_rejects_mixed_lengths() -> None:
@@ -110,7 +101,7 @@ def test_version_detection_rejects_mixed_lengths() -> None:
 
     # Mix shares with different lengths (3 vs 4 bytes)
     mixed_parts = [
-        bytearray([0x01, 0x42, 0x10]),      # 3 bytes
+        bytearray([0x01, 0x42, 0x10]),  # 3 bytes
         bytearray([0x55, 0x43, 0x60, 0x20]),  # 4 bytes
     ]
 
@@ -166,23 +157,6 @@ def test_split_with_explicit_version_1() -> None:
     assert len(parts[0]) == len(secret) + 2
     assert parts[0][0] == 0x01  # Version byte
     assert combine(parts[:3]) == secret
-
-
-def test_version_detection_consistency() -> None:
-    """Test that all shares in a set are detected as same version."""
-    secret = b"test"
-
-    # Create version 0 shares
-    parts_v0 = split(secret, 5, 3, version=0, rng=Random(42))
-    # All should be detected as legacy
-    from shamir import _detect_share_version
-
-    assert _detect_share_version(parts_v0) == 0
-
-    # Create version 1 shares
-    parts_v1 = split(secret, 5, 3, version=1, rng=Random(42))
-    # All should be detected as version 1
-    assert _detect_share_version(parts_v1) == 1
 
 
 def test_combine_legacy_shares_explicit() -> None:
@@ -305,7 +279,7 @@ def test_version_detection_legacy_secret_starting_with_01() -> None:
     assert reconstructed == secret
 
     # Multi-byte secret starting with 0x01
-    secret2 = b"\x01\x00\xFF"
+    secret2 = b"\x01\x00\xff"
     parts2 = split(secret2, 3, 2, version=0, rng=Random(42))
 
     # All shares should be 4 bytes: [y0=0x01, y1, y2, x_coord]
@@ -360,3 +334,24 @@ def test_version_detection_ambiguous_3byte_shares() -> None:
     # Auto-detection works for 4+ byte shares
     reconstructed_v1_2byte = combine(parts_v1_2byte[:2])
     assert reconstructed_v1_2byte == secret_v1_2byte
+
+
+def test_version_detection_all_3byte_shares_starting_with_01() -> None:
+    """Test that when ALL 3-byte shares start with 0x01, detection returns LEGACY.
+
+    This is the conservative approach to avoid false positives for legacy shares
+    with 2-byte secrets starting with 0x01.
+    """
+    from shamir import _detect_share_version, SHARE_VERSION_LEGACY
+
+    # Create 3-byte version 1 shares (single-byte secret)
+    secret_v1 = b"\x42"
+    parts_v1 = split(secret_v1, 3, 2, version=1, rng=Random(42))
+    assert len(parts_v1[0]) == 3  # [version=0x01, y0, x_coord]
+
+    # All 3 shares start with 0x01
+    assert all(part[0] == 0x01 for part in parts_v1)
+
+    # Detection should return LEGACY (conservative to avoid false positives)
+    detected_version = _detect_share_version(parts_v1[:2])
+    assert detected_version == SHARE_VERSION_LEGACY

@@ -150,6 +150,7 @@ htmlcov/
 .coverage
 .coverage.*
 .cache
+mutants/
 nosetests.xml
 coverage.xml
 *.cover

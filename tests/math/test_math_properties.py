@@ -1,4 +1,3 @@
-import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
@@ -130,8 +129,6 @@ def test_multiplicative_zero(a: int) -> None:
 
 
 # Exhaustive Field Coverage Tests
-
-
 @given(
     a=st.integers(min_value=0, max_value=255),
     b=st.integers(min_value=0, max_value=255),

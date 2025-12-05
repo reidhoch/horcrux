@@ -37,6 +37,7 @@ Changelog = "https://github.com/reidhoch/horcrux/releases"
 dev = [
   "bandit[toml]>=1.8.0",
   "hypothesis>=6.142.1",
+  "mutmut>=3.4.0",
   "mypy>=1.16",
   "pip-audit>=2.9.0",
   "pre-commit>=4.2",
@@ -62,6 +63,10 @@ version-file = "shamir/_version.py"
 [tool.hatch.build.targets.wheel]
 packages = ["shamir"]
 artifacts = ["shamir/py.typed"]
+
+[tool.mutmut]
+paths_to_mutate = [ "shamir/" ]
+pytest_add_cli_args_test_selection = ["-m", "not slow and not benchmark"]
 
 [tool.mypy]
 python_version = "3.11"

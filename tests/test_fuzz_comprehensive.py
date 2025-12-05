@@ -115,7 +115,9 @@ def test_threshold_property_any_subset_works(
 
     # Test with threshold + subset_size shares (if applicable)
     if threshold + subset_size <= parts:
-        reconstructed_extra = combine(shares[: threshold + subset_size], version=version)
+        reconstructed_extra = combine(
+            shares[: threshold + subset_size], version=version
+        )
         assert reconstructed_extra == secret
 
 
