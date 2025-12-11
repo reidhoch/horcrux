@@ -40,6 +40,7 @@ class TestStressTesting:
             reconstructed = combine(parts[:3], version=1)
             assert reconstructed == secret
 
+    @pytest.mark.slow
     def test_memory_efficiency(self) -> None:
         """Test memory usage with large data."""
         try:
@@ -195,6 +196,7 @@ class TestStressTesting:
 class TestBenchmarks:
     """Performance benchmarks."""
 
+    @pytest.mark.slow
     def test_size_scalability_benchmark(self) -> None:
         """Benchmark with different secret sizes."""
         sizes = [
