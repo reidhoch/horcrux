@@ -36,6 +36,7 @@ Changelog = "https://github.com/reidhoch/horcrux/releases"
 [dependency-groups]
 dev = [
   "bandit[toml]>=1.8.0",
+  "complexipy>=5.1.0",
   "hypothesis>=6.142.1",
   "mutmut>=3.4.0",
   "mypy>=1.16",
