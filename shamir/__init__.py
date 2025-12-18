@@ -137,7 +137,7 @@ def combine(parts: Shares, version: int | None = None) -> bytearray:
         share_version = _detect_share_version(parts)
     else:
         # Validate explicit version parameter
-        if version not in (SHARE_VERSION_LEGACY, SHARE_VERSION_1):
+        if version not in {SHARE_VERSION_LEGACY, SHARE_VERSION_1}:
             raise ValueError(Error.UNSUPPORTED_SHARE_VERSION)
         share_version = version
 
@@ -334,7 +334,7 @@ def _validate_split_params(
         raise ValueError(Error.CANNOT_SPLIT_EMPTY_SECRET)
     if len(secret) > MAX_SECRET_SIZE:
         raise ValueError(Error.SECRET_EXCEEDS_MAX_SIZE)
-    if version is not None and version not in (SHARE_VERSION_LEGACY, SHARE_VERSION_1):
+    if version is not None and version not in {SHARE_VERSION_LEGACY, SHARE_VERSION_1}:
         raise ValueError(Error.UNSUPPORTED_SHARE_VERSION)
 
 
