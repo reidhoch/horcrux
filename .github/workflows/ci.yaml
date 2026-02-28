@@ -36,7 +36,7 @@ jobs:
         run: |
           uv run pytest --junit-xml=junit/test-results-${{ matrix.python-version }}.xml --cov=shamir --cov-branch --cov-report=xml -n auto -m "not slow and not benchmark"
       - name: Upload pytest test results
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: test-results-${{ matrix.python-version }}
           path: junit/test-results-${{ matrix.python-version }}.xml
