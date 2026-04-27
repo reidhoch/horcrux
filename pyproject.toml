@@ -52,7 +52,7 @@ dev = [
   "tox>=4.26",
   "vulture>=2.14",
 ]
-examples = ["typer>=0.16,<0.25"]
+examples = ["typer>=0.16,<0.26"]
 
 [tool.hatch.version]
 source = "vcs"
