@@ -10,13 +10,16 @@ automations:
   # ============================================================================
   # REVIEW TIME ESTIMATION
   # ============================================================================
+  # Bucketed into 3 labels matching the color thresholds. Avoids creating one
+  # label per integer minute (the canonical "{{ calc.etr }} min review" form
+  # quickly accumulates dozens of labels in the repo over time).
   estimated_time_to_review:
     if:
       - true
     run:
       - action: add-label@v1
         args:
-          label: "{{ calc.etr }} min review"
+          label: "{{ '20+ min review' if (calc.etr >= 20) else ('5-20 min review' if (calc.etr >= 5) else '<5 min review') }}"
           color: {{ 'E94637' if (calc.etr >= 20) else ('FBBD10' if (calc.etr >= 5) else '36A853') }}
 
   # ============================================================================
@@ -52,7 +55,10 @@ automations:
   # ============================================================================
   # SECURITY-SENSITIVE CODE DETECTION
   # ============================================================================
-  require_security_review:
+  # Always label and post the security checklist when security-sensitive paths
+  # change — including for reidhoch's own PRs (self-review of the checklist is
+  # still useful as a forcing function).
+  label_security_review:
     if:
       - {{ is.security_sensitive }}
     run:
@@ -70,6 +76,9 @@ automations:
             - Polynomial interpolation (`shamir/utils/`)
             - Core API or error handling
 
+            Approval from @reidhoch is required to merge (unless reidhoch is
+            the PR author — GitHub does not permit self-review).
+
             **Required review checklist:**
             - [ ] No timing side channels introduced
             - [ ] Constant-time operations maintained where needed
@@ -77,7 +86,19 @@ automations:
             - [ ] Property-based tests added for new invariants
             - [ ] All validation uses `Error` enum messages
 
-            See CLAUDE.md Security Guidelines for details.
+            See `AGENTS.md` "Security Guidelines" section for details.
+
+  # Enforce the @reidhoch reviewer requirement only when reidhoch isn't the
+  # PR author — otherwise GitHub blocks the PR forever (a user can't review
+  # their own PR). Bots and other contributors always need reidhoch approval.
+  enforce_security_review:
+    if:
+      - {{ is.security_sensitive }}
+      - {{ pr.author != 'reidhoch' }}
+    run:
+      - action: require-reviewers@v1
+        args:
+          reviewers: [reidhoch]
 
   # ============================================================================
   # API CHANGE DETECTION
@@ -102,7 +123,7 @@ automations:
             - [ ] `__all__` exports updated if adding/removing functions
             - [ ] CHANGELOG.md updated (if applicable)
 
-            See CLAUDE.md API Stability & Versioning for guidelines.
+            See `CONTRIBUTING.md` "API Stability & Versioning" section for guidelines.
 
   # ============================================================================
   # TEST COVERAGE REQUIREMENTS
@@ -112,6 +133,7 @@ automations:
       - {{ is.code_change }}
       - {{ not is.has_tests }}
       - {{ not (is.formatting or is.docs) }}
+      - {{ not is.bot_author }}
     run:
       - action: add-label@v1
         args:
@@ -122,7 +144,7 @@ automations:
           comment: |
             ⚠️ **This PR modifies `shamir/` code but doesn't include test changes**
 
-            Per CLAUDE.md guidelines, code changes should include corresponding tests.
+            Per `AGENTS.md` guidelines, code changes should include corresponding tests.
 
             Consider adding:
             - Unit tests for new functions/methods
@@ -153,7 +175,7 @@ automations:
             📦 **This PR modifies dependencies**
 
             **Required verification:**
-            - [ ] New dependencies justified (see CLAUDE.md Dependency Management)
+            - [ ] New dependencies justified (see `AGENTS.md` "Dependency Management" section)
             - [ ] Security advisories checked (CVE database, GitHub Security)
             - [ ] Package actively maintained (recent commits, responsive maintainers)
             - [ ] `uv sync` tested locally
@@ -175,33 +197,39 @@ automations:
       - action: add-comment@v1
         args:
           comment: |
-            ⚙️ **This PR modifies CI/workflow configuration**
+            ⚙️ **This PR modifies CI/workflow or review-routing configuration**
 
-            Changes to workflows require careful review to ensure:
+            Includes changes to `.github/workflows/`, `.github/CODEOWNERS`,
+            `.github/dependabot.yml`, or `.cm/` (gitStream automation rules).
+
+            Changes here require careful review to ensure:
             - Test coverage requirements maintained
             - Security scanning not bypassed
             - Pre-commit hooks still enforced
             - All Python versions still tested
+            - Auto-approval rules still exclude crypto code (`shamir/`)
+            - Review routing (CODEOWNERS) is intentional
 
   # ============================================================================
   # DOCUMENTATION DRIFT DETECTION
   # ============================================================================
   docs_drift:
     if:
-      - {{ is.code_change }}
+      - {{ is.api_change }}
       - {{ not is.has_docs_update }}
-      - {{ size.is.large }}
+      - {{ not is.bot_author }}
     run:
       - action: add-comment@v1
         args:
           comment: |
-            📚 **Large PR with code changes - documentation update check**
+            📚 **Public API change without documentation update**
 
-            Consider whether documentation needs updating:
-            - `README.md` for user-facing changes
-            - `CLAUDE.md` for development guidelines
+            Public API changes (`shamir/__init__.py`) typically need
+            corresponding documentation updates. Consider whether to update:
+            - `README.md` for user-facing usage examples
+            - `SECURITY.md` / `THREAT_MODEL.md` if security posture changed
             - `examples/` for new functionality
-            - Docstrings for public API changes
+            - Docstrings on the modified public functions
 
   # ============================================================================
   # PERFORMANCE-SENSITIVE CHANGES
@@ -209,6 +237,7 @@ automations:
   performance_changes:
     if:
       - {{ is.performance_sensitive }}
+      - {{ not is.bot_author }}
     run:
       - action: add-comment@v1
         args:
@@ -217,24 +246,30 @@ automations:
 
             Consider running benchmarks locally:
             ```bash
-            uv run pytest tests/test_benchmarks.py --codspeed -v
+            uv run pytest tests/benchmarks/ --codspeed -v
             ```
 
-            Performance expectations (CLAUDE.md):
-            - 1MB secrets: split/combine < 500ms
+            Performance expectations (`CONTRIBUTING.md` "Performance Expectations" section):
+            - 1MB secrets: split/combine < 30s
             - 255 parts with threshold 128: should work reliably
             - Memory: O(secret_size * parts)
 
   # ============================================================================
-  # AUTO-APPROVAL (TRIVIAL CHANGES ONLY)
+  # AUTO-APPROVAL (TRIVIAL CHANGES ONLY — NEVER FOR CRYPTO OR CI CONFIG)
   # ============================================================================
+  # Crypto code requires explicit @reidhoch approval (CODEOWNERS).
+  # isFormattingChange is a heuristic — never auto-approve anything under
+  # shamir/, even "formatting". Also exclude CI/workflow/.cm changes — a
+  # formatting-only edit to .cm/gitstream.cm could otherwise self-modify the
+  # auto-approval rules themselves.
   approve_trivial:
     if:
       - {{ size.is.small }}
-      - {{ is.formatting or is.docs }}
+      - {{ is.formatting }}
       - {{ not is.code_change }}
-      - {{ not is.api_change }}
       - {{ not is.security_sensitive }}
+      - {{ not is.workflow_change }}
+      - {{ not is.dependency_change }}
     run:
       - action: add-label@v1
         args:
@@ -244,15 +279,21 @@ automations:
       - action: add-comment@v1
         args:
           comment: |
-            "Auto-approved: trivial formatting or documentation change"
+            Auto-approved: trivial formatting change in non-crypto files.
 
   # ============================================================================
   # SAFE CHANGES (LABEL ONLY, NO AUTO-APPROVE)
   # ============================================================================
+  # Only label as "safe" when no other risk-bearing accessor matches.
+  # Avoids contradictory labels like "safe-changes" + "⚙️ ci-config" on the
+  # same PR.
   safe_changes:
     if:
-      - {{ is.formatting or is.docs }}
+      - {{ is.formatting or is.docs or is.tests }}
       - {{ not is.code_change }}
+      - {{ not is.security_sensitive }}
+      - {{ not is.workflow_change }}
+      - {{ not is.dependency_change }}
     run:
       - action: add-label@v1
         args:
@@ -266,16 +307,26 @@ calc:
   etr: {{ branch | estimatedReviewTime }}
 
 is:
+  # Bot-authored PR (Dependabot, pre-commit.ci, etc.) — used to suppress noisy
+  # checklist comments that don't apply to automated dependency/hook updates.
+  # GitHub bot accounts always have a `[bot]` suffix; substring-match catches
+  # any current or future bot author without listing each one.
+  bot_author: {{ pr.author | includes(term='[bot]') }}
+
   # Basic file type detection
   formatting: {{ source.diff.files | isFormattingChange }}
   docs: {{ files | allDocs }}
   tests: {{ files | allTests }}
 
   # Security-sensitive paths
-  security_sensitive: {{ files | match(regex=r/(shamir\/(math|utils|errors\.py|__init__\.py))/) | some }}
+  # Directory alternatives carry their own trailing slash; file alternatives
+  # are anchored with $ so 'errors.py' won't accidentally match 'errors.py.bak'.
+  # Without per-alternative anchoring, a single trailing /-or-$ after the group
+  # cannot satisfy both file and directory matches simultaneously.
+  security_sensitive: {{ files | match(regex=r/^shamir\/(math\/|utils\/|errors\.py$|__init__\.py$)/) | some }}
 
   # API changes
-  api_change: {{ files | match(regex=r/shamir\/__init__\.py/) | some }}
+  api_change: {{ files | match(regex=r/^shamir\/__init__\.py$/) | some }}
 
   # Code changes in library
   code_change: {{ files | match(regex=r/^shamir\/.*\.py$/) | some }}
@@ -283,17 +334,23 @@ is:
   # Test coverage
   has_tests: {{ files | match(regex=r/^tests\/.*\.py$/) | some }}
 
-  # Documentation updates
-  has_docs_update: {{ files | match(regex=r/(README\.md|CLAUDE\.md|examples\/)/) | some }}
+  # Documentation updates: any top-level .md (README, SECURITY, THREAT_MODEL,
+  # CONTRIBUTING, AGENTS, CODE_OF_CONDUCT, TESTING) or anything under examples/.
+  has_docs_update: {{ files | match(regex=r/^[^\/]+\.md$|^examples\//) | some }}
 
-  # Dependency changes
-  dependency_change: {{ files | match(regex=r/(pyproject\.toml|uv\.lock)/) | some }}
+  # Dependency changes: actual Python dep updates (pyproject/uv.lock) and
+  # pre-commit hook revisions (autoupdated regularly by pre-commit.ci).
+  # NOTE: .github/dependabot.yml is meta-config about *how* deps get updated,
+  # so it lives in workflow_change instead — its review checklist is more apt.
+  dependency_change: {{ files | match(regex=r/^(pyproject\.toml|uv\.lock|\.pre-commit-config\.yaml)$/) | some }}
 
-  # CI/workflow changes
-  workflow_change: {{ files | match(regex=r/\.github\/workflows\/.*\.yml$/) | some }}
+  # CI/workflow & review-routing config changes. Includes .cm/ files (gitStream
+  # automation rules) and CODEOWNERS so changes to safety gates themselves
+  # surface the workflow_changes review checklist.
+  workflow_change: {{ files | match(regex=r/^(\.github\/(workflows\/[^\/]+\.ya?ml|CODEOWNERS|dependabot\.yml)|\.cm\/[^\/]+\.cm)$/) | some }}
 
   # Performance-sensitive paths
-  performance_sensitive: {{ files | match(regex=r/shamir\/(math|utils)\/.*\.py/) | some }}
+  performance_sensitive: {{ files | match(regex=r/^shamir\/(math|utils)\/.*\.py$/) | some }}
 
 size:
   is:

@@ -201,7 +201,7 @@ Explain what security guarantees the code provides:
 
 Security-sensitive changes require thorough review:
 
-- **Multiple reviewers**: At least two reviewers for crypto code
+- **Maintainer approval**: Approval from @reidhoch is required for crypto code (see `.github/CODEOWNERS`)
 - **Testing**: Demonstrate tests cover security properties
 - **Documentation**: Explain security rationale in comments
 
@@ -255,7 +255,7 @@ The project includes comprehensive security scanning:
 
 For security-critical changes:
 
-1. **Code review**: At least two reviewers familiar with cryptography
+1. **Code review**: Approval from @reidhoch is required (see `.github/CODEOWNERS`); gitStream enforces this for changes under `shamir/` via `require-reviewers@v1`
 2. **Testing**: Property-based tests demonstrate security properties
 3. **Documentation**: Security rationale explained in comments
 4. **Threat modeling**: Consider attack vectors and mitigations
