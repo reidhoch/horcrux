@@ -79,7 +79,7 @@ If something needs work, your review should help it get there through specific, 
 
 Before approving, verify:
 
-- [ ] All required development workflow steps completed (uv sync, pre-commit, pytest)
+- [ ] All required development workflow steps completed (uv sync, prek, pytest)
 - [ ] Changes align with repository patterns and conventions
 - [ ] API changes are documented and backwards-compatible where possible
 - [ ] Error handling follows project patterns (specific exception types from Error enum)
@@ -215,17 +215,17 @@ The project includes comprehensive security scanning via `.github/workflows/secu
 
 ### Pre-commit Hooks
 
-The project uses pre-commit hooks to ensure code quality:
+The project uses pre-commit hooks (run via [prek](https://github.com/j178/prek), a Rust reimplementation of pre-commit) to ensure code quality:
 
 ```bash
 # Install hooks
-uv run pre-commit install
+uv run prek install
 
 # Run all hooks
-uv run pre-commit run --all-files
+uv run prek run --all-files
 
 # Run specific hook
-uv run pre-commit run ruff-format --all-files
+uv run prek run ruff-format --all-files
 ```
 
 **Configured hooks:**
@@ -248,7 +248,7 @@ cd horcrux
 uv sync
 
 # Install pre-commit hooks
-uv run pre-commit install
+uv run prek install
 ```
 
 ### Making Changes
@@ -256,7 +256,7 @@ uv run pre-commit install
 1. **Create branch**: `git checkout -b feature/your-feature`
 2. **Make changes**: Edit code, add tests, update docs
 3. **Run tests**: `uv run pytest -n auto`
-4. **Run checks**: `uv run pre-commit run --all-files`
+4. **Run checks**: `uv run prek run --all-files`
 5. **Commit**: `git commit -m "Description of changes"`
 6. **Push**: `git push origin feature/your-feature`
 7. **Open PR**: Create pull request on GitHub
@@ -267,7 +267,7 @@ uv run pre-commit install
 
 ```bash
 uv sync                              # Install dependencies
-uv run pre-commit run --all-files    # Ruff + mypy + gitleaks
+uv run prek run --all-files          # Ruff + mypy + gitleaks
 uv run pytest -n auto                # Run full test suite
 ```
 
@@ -316,7 +316,7 @@ Include:
 ### PR Checklist
 
 - [ ] Tests pass locally (`uv run pytest -n auto`)
-- [ ] Pre-commit checks pass (`uv run pre-commit run --all-files`)
+- [ ] Pre-commit checks pass (`uv run prek run --all-files`)
 - [ ] New functionality has tests
 - [ ] Documentation updated (if needed)
 - [ ] CHANGELOG.md updated (if user-facing change)

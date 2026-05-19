@@ -10,7 +10,7 @@ Horcrux is a Python implementation of Shamir's Secret Sharing based on HashiCorp
 
 ```bash
 uv sync                              # Install dependencies
-uv run pre-commit run --all-files    # Ruff + mypy + gitleaks
+uv run prek run --all-files          # Ruff + mypy + gitleaks
 uv run pytest -n auto                # Run full test suite
 ```
 
@@ -161,11 +161,11 @@ Be brief and to the point. Do not regurgitate information easily gleaned from co
 - **Linting**: `uv run ruff check` (or `--fix`)
 - **Formatting**: `uv run ruff format`
 - **Type Checking**: `uv run mypy`
-- **All Checks**: `uv run pre-commit run --all-files`
+- **All Checks**: `uv run prek run --all-files`
 
 ### Security Scans
 
-- **Secrets**: `uv run pre-commit run gitleaks --all-files`
+- **Secrets**: `uv run prek run gitleaks --all-files`
 - **Python Security**: `uv run bandit -r shamir/ -s B105`
 - **Dependencies**: `uv run pip-audit --desc`
 
@@ -180,7 +180,7 @@ Be brief and to the point. Do not regurgitate information easily gleaned from co
 ### Build Issues
 
 1. **Dependencies**: Always `uv sync` first
-2. **Pre-commit fails**: Run `uv run pre-commit run --all-files` to see failures
+2. **Pre-commit fails**: Run `uv run prek run --all-files` to see failures
 3. **Type errors**: Use `uv run mypy` directly, check `pyproject.toml` config
 4. **Coverage failures**: Add tests for uncovered branches
 
