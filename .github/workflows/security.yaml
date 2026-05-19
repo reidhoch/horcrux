@@ -92,7 +92,7 @@ jobs:
 
       - name: Run pip-audit (fails on any vulnerability)
         run: |
-          uv pip list --format=freeze > requirements.txt
+          uv export --no-emit-project --no-hashes --format requirements-txt > requirements.txt
           uv run --with pip-audit pip-audit \
             --requirement requirements.txt \
             --format json \
