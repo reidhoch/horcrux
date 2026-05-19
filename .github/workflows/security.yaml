@@ -24,7 +24,8 @@ jobs:
     timeout-minutes: 15
     container:
       # Canonical Semgrep CI pattern (replaces deprecated returntocorp/semgrep-action).
-      image: semgrep/semgrep
+      # Pinned to tag + digest for supply-chain reproducibility (matches action SHA-pinning policy).
+      image: semgrep/semgrep:1.163.0@sha256:7cad2bc2d1e44f87f0bf4be6d1fa23aa90fb72015bebc89fb91385d813987a03
     # Skip dependabot PRs to avoid permission issues per Semgrep's recommendation.
     if: github.actor != 'dependabot[bot]'
     permissions:
