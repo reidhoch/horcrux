@@ -1,5 +1,7 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
+# `auto_update` is a prek-specific key (https://github.com/j178/prek);
+# pre-commit ignores unknown top-level keys.
 auto_update:
   cooldown_days: 14
 repos:
