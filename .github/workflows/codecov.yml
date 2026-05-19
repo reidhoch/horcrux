@@ -3,11 +3,22 @@ on:
   push:
     branches:
       - "develop"
+
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   coverage:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # OIDC tokenless auth for codecov-action@v5+ (replaces static CODECOV_TOKEN).
+    permissions:
+      contents: read
+      id-token: write
     strategy:
       matrix:
         python-version: ["3.11"]
@@ -19,23 +30,19 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install uv
+      - name: Install uv and Python ${{ matrix.python-version }}
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
       - name: Install project dependencies
-        run: uv sync --group dev
+        run: uv sync --locked --group dev
       - name: Run tests
         run: |
           uv run pytest --junit-xml=junit/test-results-${{ matrix.python-version }}.xml --cov=shamir --cov-branch --cov-report=xml -n auto -m "not slow and not benchmark"
       - name: Code Coverage
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
         with:
           files: coverage.xml
           flags: unittests
-          token: ${{ secrets.CODECOV_TOKEN }}
+          use_oidc: true
