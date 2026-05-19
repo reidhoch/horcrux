@@ -1,16 +1,30 @@
 [build-system]
-requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
+requires = ["hatchling", "hatch-vcs"]
+
+[dependency-groups]
+dev = [
+  "bandit[toml]>=1.8.0",
+  "complexipy>=5.1.0",
+  "hypothesis>=6.142.1",
+  "mutmut>=3.4.0",
+  "mypy>=1.16",
+  "pip-audit>=2.9.0",
+  "prek>=0.3.12",
+  "psutil>=7.1.0",
+  "pytest>=8.4",
+  "pytest-codspeed>=4.0",
+  "pytest-cov>=6.2,<8.0",
+  "pytest-xdist[psutil]>=3.7",
+  "ruff>=0.11.13,<0.16.0",
+  "scipy>=1.16.3",
+  "tox>=4.26",
+  "vulture>=2.14",
+]
+examples = ["typer>=0.16,<0.26"]
 
 [project]
-name = "horcrux"
-dynamic = ["version"]
-description = "A Python implementation of Shamir's Secret Sharing"
 authors = [{ name = "Reid Hochstedler", email = "reidhoch@gmail.com" }]
-license = { text = "MPL-2.0" }
-readme = "README.md"
-requires-python = ">=3.11"
-keywords = ["cryptography", "secret-sharing", "shamir", "security", "vault"]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
@@ -25,93 +39,20 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules",
   "Typing :: Typed",
 ]
+description = "A Python implementation of Shamir's Secret Sharing"
+dynamic = ["version"]
+keywords = ["cryptography", "secret-sharing", "shamir", "security", "vault"]
+license = { text = "MPL-2.0" }
+name = "horcrux"
+readme = "README.md"
+requires-python = ">=3.11"
 
 [project.urls]
-Homepage = "https://github.com/reidhoch/horcrux"
-Repository = "https://github.com/reidhoch/horcrux"
-Documentation = "https://github.com/reidhoch/horcrux#readme"
 "Bug Tracker" = "https://github.com/reidhoch/horcrux/issues"
 Changelog = "https://github.com/reidhoch/horcrux/releases"
-
-[dependency-groups]
-dev = [
-  "bandit[toml]>=1.8.0",
-  "complexipy>=5.1.0",
-  "hypothesis>=6.142.1",
-  "mutmut>=3.4.0",
-  "mypy>=1.16",
-  "pip-audit>=2.9.0",
-  "pre-commit>=4.2",
-  "psutil>=7.1.0",
-  "pytest>=8.4",
-  "pytest-codspeed>=4.0",
-  "pytest-cov>=6.2,<8.0",
-  "pytest-xdist[psutil]>=3.7",
-  "ruff>=0.11.13,<0.16.0",
-  "scipy>=1.16.3",
-  "tox>=4.26",
-  "vulture>=2.14",
-]
-examples = ["typer>=0.16,<0.26"]
-
-[tool.hatch.version]
-source = "vcs"
-fallback-version = "0.0.0"
-
-[tool.hatch.build.hooks.vcs]
-version-file = "shamir/_version.py"
-
-[tool.hatch.build.targets.wheel]
-packages = ["shamir"]
-artifacts = ["shamir/py.typed"]
-
-[tool.mutmut]
-paths_to_mutate = [ "shamir/" ]
-pytest_add_cli_args_test_selection = ["-m", "not slow and not benchmark"]
-
-[tool.mypy]
-python_version = "3.11"
-strict = true
-show_column_numbers = true
-show_error_codes = true
-pretty = true
-
-[[tool.mypy.overrides]]
-module = "tests.*"
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = "examples.*"
-disallow_untyped_defs = false
-
-[tool.ruff]
-line-length = 88
-target-version = "py311"
-extend-exclude = ["examples", "tests"]
-
-[tool.ruff.lint]
-select = ["ALL"]
-ignore = ["COM812"]
-
-[tool.ruff.lint.per-file-ignores]
-"shamir/math/__init__.py" = ["A005"]
-"shamir/__init__.py" = ["C901"]  # combine() complexity is 11, acceptable for version handling
-
-[tool.ruff.lint.isort]
-known-first-party = ["shamir"]
-
-[tool.ruff.lint.pydocstyle]
-convention = "google"
-
-[tool.pytest.ini_options]
-minversion = "8.0"
-addopts = ["--strict-markers", "--strict-config", "-ra"]
-testpaths = ["tests"]
-pythonpath = ["."]
-markers = [
-  "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-  "benchmark: marks tests as benchmarks (deselect with '-m \"not benchmark\"')",
-]
+Documentation = "https://github.com/reidhoch/horcrux#readme"
+Homepage = "https://github.com/reidhoch/horcrux"
+Repository = "https://github.com/reidhoch/horcrux"
 
 [tool.bandit]
 exclude_dirs = ["tests", "examples"]
@@ -119,3 +60,65 @@ skips = [
   "B101",
   "B105",
 ] # Skip assert_used and hardcoded_password_string (false positives on error messages)
+
+[tool.hatch.build.hooks.vcs]
+version-file = "shamir/_version.py"
+
+[tool.hatch.build.targets.wheel]
+artifacts = ["shamir/py.typed"]
+packages = ["shamir"]
+
+[tool.hatch.version]
+fallback-version = "0.0.0"
+source = "vcs"
+
+[tool.mutmut]
+paths_to_mutate = ["shamir/"]
+pytest_add_cli_args_test_selection = ["-m", "not slow and not benchmark"]
+
+[tool.mypy]
+pretty = true
+python_version = "3.11"
+show_column_numbers = true
+show_error_codes = true
+strict = true
+
+[[tool.mypy.overrides]]
+disallow_untyped_defs = false
+module = "examples.*"
+
+[[tool.mypy.overrides]]
+ignore_errors = true
+module = "tests.*"
+
+[tool.pytest.ini_options]
+addopts = ["--strict-markers", "--strict-config", "-ra"]
+markers = [
+  "benchmark: marks tests as benchmarks (deselect with '-m \"not benchmark\"')",
+  "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
+minversion = "8.0"
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+extend-exclude = ["examples", "tests"]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+ignore = ["COM812"]
+select = ["ALL"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["shamir"]
+
+[tool.ruff.lint.per-file-ignores]
+"shamir/__init__.py" = ["C901"]  # combine() complexity is 11, acceptable for version handling
+"shamir/math/__init__.py" = ["A005"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.uv]
+exclude-newer = "14 days"

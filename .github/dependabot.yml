@@ -9,8 +9,19 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    cooldown:
+      default-days: 14
+  - package-ecosystem: "pre-commit"
+    directory: "/"
+    target-branch: "develop"
+    schedule:
+      interval: "daily"
+    cooldown:
+      default-days: 14
   - package-ecosystem: "uv" # See documentation for possible values
     directory: "/" # Location of package manifests
     target-branch: "develop"
     schedule:
       interval: "daily"
+    cooldown:
+      default-days: 14
