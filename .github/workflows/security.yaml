@@ -6,42 +6,47 @@ on:
   pull_request:
     branches: ["develop"]
   schedule:
-    # Run security scans weekly on Monday at 00:00 UTC
-    - cron: "0 0 * * 1"
+    # Run security scans weekly on Monday at 00:30 UTC
+    # (staggered 30 min after codeql.yml's 00:00 schedule to reduce contention)
+    - cron: "30 0 * * 1"
 
 permissions:
   contents: read
-  security-events: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   semgrep:
     name: Semgrep SAST
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      # Canonical Semgrep CI pattern (replaces deprecated returntocorp/semgrep-action).
+      image: semgrep/semgrep
+    # Skip dependabot PRs to avoid permission issues per Semgrep's recommendation.
+    if: github.actor != 'dependabot[bot]'
     permissions:
       contents: read
       security-events: write
     steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@ab7a9404c0f3da075243ca237b5fac12c98deaa5 # v2.19.3
-        with:
-          egress-policy: audit
-
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Run Semgrep
-        uses: returntocorp/semgrep-action@713efdd345f3035192eaa63f56867b88e63e4e5d # v1
+      - name: Run Semgrep CE scan
+        run: semgrep scan --config p/default --config p/python --config p/security-audit --config p/owasp-top-ten --config p/secrets --sarif --output=semgrep.sarif
+
+      - name: Upload SARIF to GitHub Advanced Security
+        uses: github/codeql-action/upload-sarif@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v4.35.5
+        if: always()
         with:
-          config: >-
-            p/default
-            p/python
-            p/security-audit
-            p/owasp-top-ten
-            p/secrets
+          sarif_file: semgrep.sarif
 
   bandit:
     name: Bandit Security Linter
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@ab7a9404c0f3da075243ca237b5fac12c98deaa5 # v2.19.3
@@ -51,20 +56,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      - name: Install uv and Python 3.14
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
-          python-version: "3.13"
+          python-version: "3.14"
+          enable-cache: true
 
       - name: Install Bandit
-        run: pip install bandit[toml]
+        run: uv tool install 'bandit[toml]'
 
       - name: Run Bandit
-        run: bandit -r shamir/ --severity-level medium --confidence-level medium || true
+        run: uv tool run bandit -r shamir/ --severity-level medium --confidence-level medium
 
   dependency-scan:
     name: Dependency Vulnerability Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@ab7a9404c0f3da075243ca237b5fac12c98deaa5 # v2.19.3
@@ -74,26 +81,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-        with:
-          python-version: "3.13"
-
-      - name: Install uv
+      - name: Install uv and Python 3.14
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
+          python-version: "3.14"
           enable-cache: true
 
       - name: Install project dependencies
-        run: uv sync --group dev
+        run: uv sync --locked --group dev
 
-      - name: Install pip-audit
-        run: uv pip install pip-audit
-
-      - name: Run pip-audit
+      - name: Run pip-audit (fails on any vulnerability)
         run: |
           uv pip list --format=freeze > requirements.txt
-          uv run pip-audit --requirement requirements.txt --format json --output pip-audit-report.json || true
+          uv run --with pip-audit pip-audit \
+            --requirement requirements.txt \
+            --format json \
+            --output pip-audit-report.json
 
       - name: Upload pip-audit report
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -102,19 +105,10 @@ jobs:
           name: pip-audit-report
           path: pip-audit-report.json
 
-      - name: Check for critical vulnerabilities
-        run: |
-          if [ -f pip-audit-report.json ]; then
-            CRITICAL_COUNT=$(jq '[.dependencies[] | select(.vulns[].severity == "critical" or .vulns[].severity == "high")] | length' pip-audit-report.json || echo "0")
-            if [ "$CRITICAL_COUNT" != "0" ]; then
-              echo "::error::Found $CRITICAL_COUNT critical/high severity vulnerabilities"
-              exit 1
-            fi
-          fi
-
   secrets-scan:
     name: Secrets Detection
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@ab7a9404c0f3da075243ca237b5fac12c98deaa5 # v2.19.3
