@@ -255,7 +255,7 @@ The project includes comprehensive security scanning:
 
 For security-critical changes:
 
-1. **Code review**: Approval from @reidhoch is required (see `.github/CODEOWNERS`); gitStream enforces this for changes under `shamir/` via `require-reviewers@v1`
+1. **Code review**: Approval from @reidhoch is required (see `.github/CODEOWNERS`); gitStream enforces this for changes under `shamir/` via `require-reviewers@v1`. Exception: when @reidhoch is the PR author, this gate is skipped — GitHub forbids self-review, so requiring it would deadlock the PR. The security checklist comment still posts for self-review as a forcing function.
 2. **Testing**: Property-based tests demonstrate security properties
 3. **Documentation**: Security rationale explained in comments
 4. **Threat modeling**: Consider attack vectors and mitigations
