@@ -27,7 +27,7 @@ class TestSecurityProperties:
         original_secret = b"X"  # Single byte: 0x58 (88 decimal)
 
         # Create shares for the original secret
-        parts = split(original_secret, 5, threshold, rng=Random(12345), version=1)
+        parts = split(original_secret, 5, threshold, rng=Random(12345))
 
         # Take k-1 shares (insufficient for unique reconstruction)
         insufficient_parts = parts[: threshold - 1]
@@ -57,10 +57,8 @@ class TestSecurityProperties:
             # We want: interpolate([x1, x2, x_complete], [y1, y2, y_needed], 0) = target
 
             # Get the y-values from insufficient parts (for first byte of secret)
-            # Note: Version 1 format is [version, y_values..., x_coord]
-            y_insufficient = [
-                part[1] for part in insufficient_parts
-            ]  # Skip version byte
+            # Share format is [y_values..., x_coord]
+            y_insufficient = [part[0] for part in insufficient_parts]
 
             # We need to solve for y_needed such that interpolation at x=0 gives target
             # Using the property: L(0) = sum over i of (y_i * lagrange_basis_i(0))
@@ -78,7 +76,7 @@ class TestSecurityProperties:
             # Compute sum of y_i * l_i(0) for the insufficient parts
             # Note: l_i(0) now includes x_complete in the product
             partial_sum = 0
-            for i, (x_i, y_i) in enumerate(zip(x_coords_insufficient, y_insufficient)):
+            for x_i, y_i in zip(x_coords_insufficient, y_insufficient):
                 # Compute l_i(0) = product over ALL other x-coords (including x_complete)
                 lagrange_basis = 1
                 for x_j in all_x_coords:
@@ -109,12 +107,12 @@ class TestSecurityProperties:
             y_needed = div(difference, lagrange_basis_complete)
 
             # Construct the completing share with the computed y-value
-            # Version 1 format: [version, y_value, x_coord]
-            completing_share = bytearray([1, y_needed, x_complete])
+            # Share format: [y_value, x_coord]
+            completing_share = bytearray([y_needed, x_complete])
 
             # Verify: combining insufficient parts + completing share reconstructs target
             all_parts = insufficient_parts + [completing_share]
-            reconstructed = combine(all_parts, version=1)
+            reconstructed = combine(all_parts)
 
             assert reconstructed == target_secret, (
                 f"Failed to reconstruct target {target_byte} from insufficient parts. "
@@ -152,25 +150,25 @@ class TestSecurityProperties:
             variations.append(bytes(modified))
 
         # Split each variation
-        base_parts = split(base_secret, 5, 3, rng=Random(123), version=1)
+        base_parts = split(base_secret, 5, 3, rng=Random(123))
 
         for variation in variations:
-            var_parts = split(variation, 5, 3, rng=Random(123), version=1)
+            var_parts = split(variation, 5, 3, rng=Random(123))
             # Parts should be different for different secrets
             assert var_parts != base_parts
             # But each should reconstruct correctly
-            assert combine(var_parts[:3], version=1) == variation
+            assert combine(var_parts[:3]) == variation
 
     def test_no_information_leakage_from_part_count(self) -> None:
         """Test that the number of parts doesn't leak secret information."""
         secrets = [b"a", b"ab", b"abc", b"abcd"]
 
         for secret in secrets:
-            parts = split(secret, 5, 3, rng=Random(456), version=1)
+            parts = split(secret, 5, 3, rng=Random(456))
             assert len(parts) == 5  # Should always be the requested number
             for part in parts:
-                # Part length should be secret length + 2 (version + y-values + x-coordinate)
-                assert len(part) == len(secret) + 2
+                # Part length should be secret length + 1 (y-values + x-coordinate)
+                assert len(part) == len(secret) + 1
 
 
 class TestErrorConditions:
@@ -183,7 +181,7 @@ class TestErrorConditions:
             ValueError,
             match="At least two parts are required to reconstruct the secret",
         ):
-            combine([], version=1)
+            combine([])
 
         # Test single part
         with pytest.raises(
@@ -204,7 +202,7 @@ class TestErrorConditions:
         part1 = bytearray(b"abc")
         part2 = bytearray(b"abc")  # Same content = same x-coordinate
         with pytest.raises(ValueError, match="Duplicate part detected"):
-            combine([part1, part2], version=1)
+            combine([part1, part2])
 
     def test_split_error_messages(self) -> None:
         """Test that split error messages are exactly as expected."""
@@ -212,49 +210,49 @@ class TestErrorConditions:
 
         # Test parts < threshold
         with pytest.raises(ValueError, match="Parts cannot be less than threshold"):
-            split(secret, 2, 3, version=1)
+            split(secret, 2, 3)
 
         # Test parts > 255
         with pytest.raises(ValueError, match="Parts cannot exceed 255"):
-            split(secret, 256, 3, version=1)
+            split(secret, 256, 3)
 
         # Test threshold > 255
         with pytest.raises(ValueError, match="Threshold cannot exceed 255"):
-            split(secret, 254, 256, version=1)  # Both exceed 255
+            split(secret, 254, 256)  # Both exceed 255
 
         # Test threshold < 2
         with pytest.raises(ValueError, match="Threshold must be at least 2"):
-            split(secret, 5, 1, version=1)
+            split(secret, 5, 1)
 
         # Test empty secret
         with pytest.raises(ValueError, match="Cannot split an empty secret"):
-            split(b"", 3, 2, version=1)
+            split(b"", 3, 2)
 
     def test_boundary_values(self) -> None:
         """Test boundary values for parameters."""
         secret = b"boundary_test"
 
         # Minimum valid values
-        parts = split(secret, 2, 2, rng=Random(123), version=1)
+        parts = split(secret, 2, 2, rng=Random(123))
         assert len(parts) == 2
-        reconstructed = combine(parts, version=1)
+        reconstructed = combine(parts)
         assert reconstructed == secret
 
         # Test with a reasonable high number (avoiding collision issues)
-        parts = split(secret, 20, 20, rng=Random(456), version=1)
+        parts = split(secret, 20, 20, rng=Random(456))
         assert len(parts) == 20
-        reconstructed = combine(parts, version=1)
+        reconstructed = combine(parts)
         assert reconstructed == secret
 
         # Maximum valid values (parts=255 and threshold=255 are both accepted)
         # Test parts=255 with lower threshold
-        parts_max = split(secret, 255, 3, rng=Random(789), version=1)
+        parts_max = split(secret, 255, 3, rng=Random(789))
         assert len(parts_max) == 255
-        reconstructed_max = combine(parts_max[:3], version=1)
+        reconstructed_max = combine(parts_max[:3])
         assert reconstructed_max == secret
 
         # Test threshold=255 (must also have parts=255)
-        parts_max_threshold = split(secret, 255, 255, rng=Random(999), version=1)
+        parts_max_threshold = split(secret, 255, 255, rng=Random(999))
         assert len(parts_max_threshold) == 255
-        reconstructed_max_threshold = combine(parts_max_threshold, version=1)
+        reconstructed_max_threshold = combine(parts_max_threshold)
         assert reconstructed_max_threshold == secret

@@ -16,67 +16,22 @@ from shamir import combine, split
     secret=st.binary(min_size=1, max_size=1024),
     parts=st.integers(min_value=2, max_value=20),
     threshold=st.integers(min_value=2, max_value=20),
-    version=st.sampled_from([0, 1]),
     rng=st.randoms(note_method_calls=True),
 )
 @settings(deadline=None, suppress_health_check=[HealthCheck.filter_too_much])
-def test_roundtrip_with_explicit_version(
+def test_roundtrip(
     secret: bytes,
     parts: int,
     threshold: int,
-    version: int,
     rng: Random,
 ) -> None:
-    """Test roundtrip with explicit version parameter (100% reliable).
-
-    Using explicit version parameter eliminates ambiguity for 3-byte shares.
-    """
+    """Test that splitting then combining recovers the original secret."""
     assume(parts >= threshold)
 
-    shares = split(secret, parts, threshold, rng=rng, version=version)
-
-    # Reconstruct with explicit version (100% reliable)
-    reconstructed = combine(shares[:threshold], version=version)
+    shares = split(secret, parts, threshold, rng=rng)
+    reconstructed = combine(shares[:threshold])
 
     assert reconstructed == secret
-
-
-@given(
-    secret=st.binary(min_size=1, max_size=100),
-    parts=st.integers(min_value=2, max_value=10),
-    threshold=st.integers(min_value=2, max_value=10),
-    rng=st.randoms(note_method_calls=True),
-)
-@settings(deadline=None, suppress_health_check=[HealthCheck.filter_too_much])
-def test_version_detection_consistency(
-    secret: bytes,
-    parts: int,
-    threshold: int,
-    rng: Random,
-) -> None:
-    """Test that version detection works reliably with explicit version parameter.
-
-    Note: Auto-detection has a documented limitation for 3-byte shares where
-    all start with 0x01 (ambiguous between version 0 with 2-byte secret starting
-    with 0x01, and version 1 with 1-byte secret). For reliability, use explicit
-    version parameter.
-    """
-    assume(parts >= threshold)
-
-    # Test version 0 shares with explicit version (100% reliable)
-    shares_v0 = split(secret, parts, threshold, rng=rng, version=0)
-    reconstructed_v0 = combine(shares_v0[:threshold], version=0)
-    assert reconstructed_v0 == secret
-
-    # Test version 1 shares with explicit version (100% reliable)
-    shares_v1 = split(secret, parts, threshold, rng=rng, version=1)
-    reconstructed_v1 = combine(shares_v1[:threshold], version=1)
-    assert reconstructed_v1 == secret
-
-    # Verify format differences
-    assert len(shares_v0[0]) == len(secret) + 1  # No version byte
-    assert len(shares_v1[0]) == len(secret) + 2  # Has version byte
-    assert shares_v1[0][0] == 0x01  # Version byte
 
 
 @given(
@@ -84,7 +39,6 @@ def test_version_detection_consistency(
     parts=st.integers(min_value=3, max_value=10),
     threshold=st.integers(min_value=2, max_value=9),
     subset_size=st.integers(min_value=0, max_value=5),
-    version=st.sampled_from([0, 1]),
     rng=st.randoms(note_method_calls=True),
 )
 @settings(
@@ -96,28 +50,24 @@ def test_threshold_property_any_subset_works(
     parts: int,
     threshold: int,
     subset_size: int,
-    version: int,
     rng: Random,
 ) -> None:
     """Test that ANY subset of threshold shares can reconstruct the secret.
 
     This is a fundamental security property: no particular shares are special.
-    Uses explicit version parameter for reliability.
     """
     assume(parts >= threshold)
     assume(threshold + subset_size <= parts)  # Ensure we can select a valid subset
 
-    shares = split(secret, parts, threshold, rng=rng, version=version)
+    shares = split(secret, parts, threshold, rng=rng)
 
-    # Test with threshold shares (explicit version for reliability)
-    reconstructed = combine(shares[:threshold], version=version)
+    # Test with threshold shares
+    reconstructed = combine(shares[:threshold])
     assert reconstructed == secret
 
     # Test with threshold + subset_size shares (if applicable)
     if threshold + subset_size <= parts:
-        reconstructed_extra = combine(
-            shares[: threshold + subset_size], version=version
-        )
+        reconstructed_extra = combine(shares[: threshold + subset_size])
         assert reconstructed_extra == secret
 
 
@@ -137,20 +87,15 @@ def test_share_format_consistency(
     """Test that all shares in a set have consistent format and length."""
     assume(parts >= threshold)
 
-    for version in [0, 1]:
-        shares = split(secret, parts, threshold, rng=rng, version=version)
+    shares = split(secret, parts, threshold, rng=rng)
 
-        # All shares should have same length
-        first_len = len(shares[0])
-        assert all(len(share) == first_len for share in shares)
+    # All shares should have same length
+    first_len = len(shares[0])
+    assert all(len(share) == first_len for share in shares)
 
-        # Version 1 shares should all start with 0x01
-        if version == 1:
-            assert all(share[0] == 0x01 for share in shares)
-
-        # All shares should have unique x-coordinates (last byte)
-        x_coords = [share[-1] for share in shares]
-        assert len(set(x_coords)) == len(shares), "Duplicate x-coordinates detected"
+    # All shares should have unique x-coordinates (last byte)
+    x_coords = [share[-1] for share in shares]
+    assert len(set(x_coords)) == len(shares), "Duplicate x-coordinates detected"
 
 
 @given(
@@ -175,17 +120,14 @@ def test_share_independence(
     assume(parts >= threshold)
     assume(len(secret) >= 4)  # Need enough bytes for meaningful comparison
 
-    shares = split(secret, parts, threshold, rng=rng, version=1)
+    shares = split(secret, parts, threshold, rng=rng)
 
     # Verify share structure is correct
     for share in shares:
-        y_values = share[1:-1]  # Skip version byte and x-coord
+        y_values = share[:-1]  # Skip x-coord
 
         # Share y-values should have same length as secret
         assert len(y_values) == len(secret)
-
-        # Version byte should be correct
-        assert share[0] == 0x01
 
         # X-coordinate (last byte) should be non-zero (range 1-255)
         assert share[-1] != 0
@@ -200,7 +142,6 @@ def test_share_independence(
     ),
     parts=st.integers(min_value=3, max_value=8),
     threshold=st.integers(min_value=2, max_value=7),
-    version=st.sampled_from([0, 1]),
     rng=st.randoms(note_method_calls=True),
 )
 @settings(
@@ -211,25 +152,26 @@ def test_multiple_secrets_independence(
     secrets: list[bytes],
     parts: int,
     threshold: int,
-    version: int,
     rng: Random,
 ) -> None:
     """Test that sharing multiple secrets produces independent share sets.
 
     Shares from different secrets should not interfere with each other.
-    Uses explicit version parameter for reliability.
     """
     assume(parts >= threshold)
     # All secrets must have same length to mix shares
     assume(len(set(len(s) for s in secrets)) == 1)
+    # For very short secrets, mixed shares can coincidentally reconstruct to an
+    # original (1/256 per byte). Require enough bytes that collision is negligible.
+    assume(len(secrets[0]) >= 4)
 
     all_shares = []
     for secret in secrets:
-        shares = split(secret, parts, threshold, rng=rng, version=version)
+        shares = split(secret, parts, threshold, rng=rng)
         all_shares.append(shares)
 
-        # Each secret should reconstruct correctly (explicit version)
-        reconstructed = combine(shares[:threshold], version=version)
+        # Each secret should reconstruct correctly
+        reconstructed = combine(shares[:threshold])
         assert reconstructed == secret
 
     # Verify that mixing shares from different secrets doesn't work
@@ -244,7 +186,7 @@ def test_multiple_secrets_independence(
             x_coords = [share[-1] for share in mixed_shares[:threshold]]
             if len(set(x_coords)) == len(x_coords):  # No duplicates
                 # Reconstruction should produce garbage, not either original secret
-                reconstructed_mixed = combine(mixed_shares[:threshold], version=version)
+                reconstructed_mixed = combine(mixed_shares[:threshold])
                 assert reconstructed_mixed != secrets[0]
                 assert reconstructed_mixed != secrets[-1]
 
@@ -272,13 +214,13 @@ def test_single_byte_modification_breaks_reconstruction(
     assume(parts >= threshold)
     assume(byte_index < len(secret))
 
-    shares = split(secret, parts, threshold, rng=rng, version=1)
+    shares = split(secret, parts, threshold, rng=rng)
 
-    # Modify a y-value byte in first share (not version byte or x-coord)
+    # Modify a y-value byte in first share (not the x-coord)
     corrupted_shares = [bytearray(share) for share in shares]
-    if len(corrupted_shares[0]) > 2:  # Has y-values
-        # Modify a y-value (between version byte and x-coordinate)
-        y_index = 1 + min(byte_index, len(corrupted_shares[0]) - 3)
+    if len(corrupted_shares[0]) > 1:  # Has y-values
+        # Modify a y-value (before the x-coordinate)
+        y_index = min(byte_index, len(corrupted_shares[0]) - 2)
         corrupted_shares[0][y_index] ^= 0xFF  # Flip all bits
 
         # Reconstruction should produce different result
@@ -290,36 +232,33 @@ def test_single_byte_modification_breaks_reconstruction(
     secret=st.binary(min_size=1, max_size=100),
     parts=st.integers(min_value=2, max_value=10),
     threshold=st.integers(min_value=2, max_value=10),
-    version=st.sampled_from([0, 1]),
 )
 @settings(deadline=None, suppress_health_check=[HealthCheck.filter_too_much])
 def test_deterministic_with_seeded_rng(
     secret: bytes,
     parts: int,
     threshold: int,
-    version: int,
 ) -> None:
     """Test that using same RNG seed produces identical shares.
 
     This is important for testing and reproducibility.
-    Uses explicit version parameter for reliability.
     """
     assume(parts >= threshold)
 
     # Same seed should produce same shares
-    shares1 = split(secret, parts, threshold, rng=Random(42), version=version)
-    shares2 = split(secret, parts, threshold, rng=Random(42), version=version)
+    shares1 = split(secret, parts, threshold, rng=Random(42))
+    shares2 = split(secret, parts, threshold, rng=Random(42))
 
     assert shares1 == shares2
 
     # Different seed should produce different shares
-    shares3 = split(secret, parts, threshold, rng=Random(43), version=version)
+    shares3 = split(secret, parts, threshold, rng=Random(43))
     assert shares1 != shares3
 
-    # But all should reconstruct to same secret (explicit version)
-    assert combine(shares1[:threshold], version=version) == secret
-    assert combine(shares2[:threshold], version=version) == secret
-    assert combine(shares3[:threshold], version=version) == secret
+    # But all should reconstruct to same secret
+    assert combine(shares1[:threshold]) == secret
+    assert combine(shares2[:threshold]) == secret
+    assert combine(shares3[:threshold]) == secret
 
 
 @given(
@@ -342,16 +281,10 @@ def test_share_length_reveals_secret_length(
     """
     assume(parts >= threshold)
 
-    # Version 0: share length = secret length + 1 (x-coordinate)
-    shares_v0 = split(secret, parts, threshold, rng=rng, version=0)
-    assert len(shares_v0[0]) == len(secret) + 1
-
-    # Version 1: share length = secret length + 2 (version byte + x-coordinate)
-    shares_v1 = split(secret, parts, threshold, rng=rng, version=1)
-    assert len(shares_v1[0]) == len(secret) + 2
+    # Share length = secret length + 1 (x-coordinate)
+    shares = split(secret, parts, threshold, rng=rng)
+    assert len(shares[0]) == len(secret) + 1
 
     # Given share length, secret length is derivable
-    derived_length_v0 = len(shares_v0[0]) - 1
-    derived_length_v1 = len(shares_v1[0]) - 2
-    assert derived_length_v0 == len(secret)
-    assert derived_length_v1 == len(secret)
+    derived_length = len(shares[0]) - 1
+    assert derived_length == len(secret)

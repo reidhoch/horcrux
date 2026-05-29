@@ -16,6 +16,3 @@ class Error(StrEnum):
     THRESHOLD_MUST_BE_AT_LEAST_2 = "Threshold must be at least 2"
     CANNOT_SPLIT_EMPTY_SECRET = "Cannot split an empty secret"  # noqa: S105
     SECRET_EXCEEDS_MAX_SIZE = "Secret size exceeds maximum allowed size"  # noqa: S105
-    UNSUPPORTED_SHARE_VERSION = "Unsupported share version"
-    MIXED_SHARE_VERSIONS = "Cannot combine shares with different versions"
-    PARTS_MUST_BE_THREE_BYTES = "Versioned parts must be at least three bytes"

@@ -24,17 +24,11 @@ except ImportError:  # pragma: no cover
 MIN_PARTS: Final[int] = 2
 MIN_THRESHOLD: Final[int] = 2
 MIN_PART_LENGTH: Final[int] = 2
-MIN_PART_LENGTH_VERSIONED: Final[int] = 3
 MAX_PARTS: Final[int] = 255
 MAX_THRESHOLD: Final[int] = 255
 MAX_SECRET_SIZE: Final[int] = (
     100 * 1024 * 1024
 )  # 100MB - prevents memory exhaustion DoS
-
-# Share format versions
-SHARE_VERSION_LEGACY: Final[int] = 0  # No version byte (backward compatibility)
-SHARE_VERSION_1: Final[int] = 1  # Version byte + y-values + x-coordinate
-CURRENT_SHARE_VERSION: Final[int] = SHARE_VERSION_1
 
 # Type aliases for better documentation
 # NOTE: `Share` is a mutable type (bytearray) for performance reasons.
@@ -42,44 +36,24 @@ CURRENT_SHARE_VERSION: Final[int] = SHARE_VERSION_1
 Share: TypeAlias = bytearray
 Shares: TypeAlias = list[Share]
 
-# Version configuration: (secret_len_offset, y_offset, min_part_length, error_message)
-# - secret_len_offset: bytes to subtract from part length to get secret length
-# - y_offset: starting index for y-values in share
-# - min_part_length: minimum allowed part length for this version
-# - error_message: error to raise if part length too short
-_VERSION_CONFIG: Final[dict[int, tuple[int, int, int, str]]] = {
-    SHARE_VERSION_LEGACY: (1, 0, MIN_PART_LENGTH, Error.PARTS_MUST_BE_TWO_BYTES),
-    SHARE_VERSION_1: (2, 1, MIN_PART_LENGTH_VERSIONED, Error.PARTS_MUST_BE_THREE_BYTES),
-}
 
-
-def combine(parts: Shares, version: int | None = None) -> bytearray:
+def combine(parts: Shares) -> bytearray:
     r"""Combine is used to reconstruct a secret once a threshold is reached.
 
     Args:
         parts: List of secret parts to combine. Must all be the same length
-              and include the x-coordinate in the last byte. Supports both
-              legacy (unversioned) and versioned share formats.
-        version: Explicit share version (0 for legacy, 1 for version 1).
-                If None, auto-detect from first byte. Explicit version
-                eliminates 1/256 false positive rate in auto-detection.
+              and include the x-coordinate in the last byte.
 
     Returns:
         The reconstructed secret as a bytearray.
 
     Raises:
         ValueError: If parts list has fewer than 2 elements, if parts have
-                   mismatched lengths, if parts are too short, if duplicate
-                   parts are detected, if shares have unsupported versions,
-                   or if mixing different share versions.
+                   mismatched lengths, if parts are too short, or if duplicate
+                   parts are detected.
 
     Examples:
-        Auto-detection (works 99.61% of the time for legacy shares):
         >>> secret = combine(shares)
-
-        Explicit version (100% reliable, recommended):
-        >>> secret = combine(shares, version=1)  # For version 1 shares
-        >>> secret = combine(shares, version=0)  # For legacy shares
 
     Security Considerations:
         Python Constant-Time Limitations:
@@ -128,26 +102,8 @@ def combine(parts: Shares, version: int | None = None) -> bytearray:
     if not all(len(part) == first_part_len for part in parts):
         raise ValueError(Error.ALL_PARTS_MUST_BE_SAME_LENGTH)
 
-    # Detect or validate share version
-    if version is None:
-        # Auto-detect share version by checking first byte
-        # Version byte is 0x00 (legacy) or 0x01+ (versioned)
-        # Legacy shares: [y_0, y_1, ..., y_n, x]
-        # Versioned shares: [version, y_0, y_1, ..., y_n, x]
-        share_version = _detect_share_version(parts)
-    else:
-        # Validate explicit version parameter
-        if version not in {SHARE_VERSION_LEGACY, SHARE_VERSION_1}:
-            raise ValueError(Error.UNSUPPORTED_SHARE_VERSION)
-        share_version = version
-
-    # Look up version-specific configuration (eliminates branching)
-    secret_len_offset, y_offset, min_required_len, error_msg = _VERSION_CONFIG[
-        share_version
-    ]
-    if first_part_len < min_required_len:
-        raise ValueError(error_msg)
-    secret_len = first_part_len - secret_len_offset
+    # Share format: [y_values..., x_coordinate]
+    secret_len = first_part_len - 1
 
     secret: bytearray = bytearray(secret_len)
     num_parts: int = len(parts)
@@ -174,7 +130,7 @@ def combine(parts: Shares, version: int | None = None) -> bytearray:
     for idx in range(len(secret)):
         result: int = 0
         for i in range(num_parts):
-            y_value: int = parts[i][idx + y_offset]
+            y_value: int = parts[i][idx]
             result = add(result, mul(y_value, basis_values[i]))
         secret[idx] = result
 
@@ -216,100 +172,10 @@ def _compute_lagrange_basis(x_samples: bytearray) -> bytearray:
     return basis_values
 
 
-def _detect_share_version(parts: Shares) -> int:  # noqa: PLR0911
-    """Detect the version of shares using improved heuristics.
-
-    Version 1 shares have a version byte (0x01) as the first byte. Version 0
-    (legacy) shares do not have a version byte - their first byte is the first
-    y-value, which can randomly be 0x01 with 1/256 probability.
-
-    Detection strategy:
-    1. Check if shares have different lengths → definitely mixed (error)
-    2. Length-based heuristic: shares with only 2 bytes MUST be legacy
-       (version 1 requires minimum 3 bytes: [version, y_value, x_coord])
-    3. Check if ALL shares start with 0x01 → version 1
-    4. Check if NONE start with 0x01 → version 0
-    5. If SOME start with 0x01:
-       - Check all shares (not just sample) to distinguish:
-         * If truly split 50/50 across ALL shares → likely intentional mixing
-         * If split is due to sampling → likely false positives in v0 shares
-
-    Args:
-        parts: List of shares to examine.
-
-    Returns:
-        The detected share version (SHARE_VERSION_LEGACY or SHARE_VERSION_1).
-
-    Raises:
-        ValueError: If shares appear to have intentionally mixed versions.
-    """
-    if not parts:
-        return SHARE_VERSION_LEGACY
-
-    # Check all shares for length consistency and first-byte patterns
-    first_length = len(parts[0])
-    shares_starting_with_01 = 0
-
-    for part in parts:
-        # Check for length mismatches
-        if len(part) != first_length:
-            raise ValueError(Error.MIXED_SHARE_VERSIONS)
-
-        # Count shares starting with 0x01
-        if part[0] == SHARE_VERSION_1:
-            shares_starting_with_01 += 1
-
-    # Length-based heuristic: Version 1 requires minimum 3 bytes
-    # [version_byte, y_value, x_coord]. If shares are only 2 bytes,
-    # they MUST be legacy format, regardless of first byte value.
-    # This prevents false positives when legacy shares' first y-value is 0x01.
-    if first_length == MIN_PART_LENGTH:
-        return SHARE_VERSION_LEGACY
-
-    # For 3-byte shares, if ALL start with 0x01, it's ambiguous:
-    # - Could be version 1 with 1-byte secret: [0x01, y0, x_coord]
-    # - Could be legacy with 2-byte secret starting with 0x01: [0x01, y1, x_coord]
-    # Conservative approach: default to legacy to avoid false positives.
-    # Users can pass explicit version=1 parameter if needed.
-    if first_length == MIN_PART_LENGTH_VERSIONED and shares_starting_with_01 == len(
-        parts
-    ):
-        return SHARE_VERSION_LEGACY
-
-    # If ALL shares start with 0x01, they're version 1
-    if shares_starting_with_01 == len(parts):
-        return SHARE_VERSION_1
-
-    # If NONE start with 0x01, they're clearly version 0
-    if shares_starting_with_01 == 0:
-        return SHARE_VERSION_LEGACY
-
-    # SOME shares start with 0x01, but not all.
-    # Calculate the ratio to distinguish intentional mixing from false positives
-    ratio = shares_starting_with_01 / len(parts)
-
-    # Only check for intentional mixing if we have enough shares to make a reliable
-    # determination. With only 2 shares, a 50/50 split is ambiguous (could be false
-    # positive). With 3+ shares, we can apply statistical reasoning.
-    #
-    # For 3+ shares: if ratio is in 40%-60% range (exclusive of 60%), it suggests
-    # intentional mixing rather than random false positives (~1/256 = 0.39%)
-    if len(parts) >= 3 and 0.40 <= ratio < 0.60:  # noqa: PLR2004
-        raise ValueError(Error.MIXED_SHARE_VERSIONS)
-
-    # Otherwise, treat as version 0 with some false positives (if ratio < 40%)
-    # or use majority voting for version 1 (if ratio >= 60%)
-    # For 2 shares, always treat ambiguous cases as version 0
-    if ratio >= 0.60:  # noqa: PLR2004
-        return SHARE_VERSION_1
-    return SHARE_VERSION_LEGACY
-
-
 def _validate_split_params(
     secret: bytes,
     parts: int,
     threshold: int,
-    version: int | None,
 ) -> None:
     """Validate parameters for split operation.
 
@@ -317,7 +183,6 @@ def _validate_split_params(
         secret: The secret to validate.
         parts: Number of parts to create.
         threshold: Minimum parts needed to reconstruct.
-        version: Share format version.
 
     Raises:
         ValueError: If any parameter is invalid.
@@ -334,8 +199,6 @@ def _validate_split_params(
         raise ValueError(Error.CANNOT_SPLIT_EMPTY_SECRET)
     if len(secret) > MAX_SECRET_SIZE:
         raise ValueError(Error.SECRET_EXCEEDS_MAX_SIZE)
-    if version is not None and version not in {SHARE_VERSION_LEGACY, SHARE_VERSION_1}:
-        raise ValueError(Error.UNSUPPORTED_SHARE_VERSION)
 
 
 def _generate_x_coordinates(rng: Random) -> list[int]:
@@ -356,37 +219,25 @@ def _generate_x_coordinates(rng: Random) -> list[int]:
 def _allocate_shares(
     parts: int,
     secret_len: int,
-    version: int,
     x_coords: list[int],
-) -> tuple[Shares, int]:
+) -> Shares:
     """Allocate and initialize share arrays.
 
     Args:
         parts: Number of shares to create.
         secret_len: Length of the secret in bytes.
-        version: Share format version (0 for legacy, 1 for version 1).
         x_coords: Pre-generated x-coordinates for shares.
 
     Returns:
-        Tuple of (output shares, y_offset for writing y-values).
+        Output shares in the format [y_bytes..., x].
     """
-    if version == SHARE_VERSION_LEGACY:
-        # Legacy format: [y_bytes..., x]
-        output: Shares = [bytearray(secret_len + 1) for _ in range(parts)]
-        y_offset = 0
-    else:  # version == SHARE_VERSION_1
-        # Version 1 format: [version, y_bytes..., x]
-        output = [bytearray(secret_len + 2) for _ in range(parts)]
-        y_offset = 1
-        # Set version byte
-        for part in output:
-            part[0] = version
+    output: Shares = [bytearray(secret_len + 1) for _ in range(parts)]
 
     # Set x-coordinates (last byte of each part, add 1 to get range [1..255])
     for idx, part in enumerate(output):
         part[len(part) - 1] = x_coords[idx] + 1
 
-    return output, y_offset
+    return output
 
 
 def split(
@@ -394,7 +245,6 @@ def split(
     parts: int,
     threshold: int,
     rng: Random | None = None,
-    version: int | None = None,
 ) -> Shares:
     r"""Split an arbitrarily long secret into a number of parts.
 
@@ -405,14 +255,9 @@ def split(
         parts: The number of shares to create (2-255).
         threshold: The minimum number of shares required to reconstruct (2-255).
         rng: Optional random number generator. Defaults to SystemRandom().
-        version: Share format version. 0 for legacy (no version byte),
-                1 for version 1 (includes version byte). Defaults to version 1
-                for new shares.
 
     Returns:
-        List of shares as bytearrays. Each share includes:
-        - Version 1: [0x01, y_values..., x_coordinate]
-        - Legacy: [y_values..., x_coordinate]
+        List of shares as bytearrays. Each share is [y_values..., x_coordinate].
 
     Raises:
         ValueError: If parameters are invalid or out of allowed ranges.
@@ -482,19 +327,17 @@ def split(
             Maximum secret size: 100MB (configurable via MAX_SECRET_SIZE)
     """
     # Validate all parameters
-    _validate_split_params(secret, parts, threshold, version)
+    _validate_split_params(secret, parts, threshold)
 
     # Set defaults
     if rng is None:
         rng = SystemRandom()
-    if version is None:
-        version = CURRENT_SHARE_VERSION
 
     # Generate unique x-coordinates for all shares
     x_coords = _generate_x_coordinates(rng)
 
-    # Allocate output shares and determine y-value offset
-    output, y_offset = _allocate_shares(parts, len(secret), version, x_coords)
+    # Allocate output shares
+    output = _allocate_shares(parts, len(secret), x_coords)
 
     # Optimization: Pre-compute x-coordinate offsets (x_coords[i] + 1)
     # This eliminates O(secret_length * parts) redundant additions
@@ -520,6 +363,6 @@ def split(
 
         # Evaluate polynomial at each x-coordinate and store y-values
         for i in range(parts):
-            output[i][idx + y_offset] = poly.evaluate(x_values[i])
+            output[i][idx] = poly.evaluate(x_values[i])
 
     return output

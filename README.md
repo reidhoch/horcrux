@@ -27,9 +27,8 @@
 - ✅ **Information-theoretic security** - Shares below threshold reveal nothing
 - ✅ **Constant-time operations** - Resistant to timing attacks
 - ✅ **DoS protection** - MAX_SECRET_SIZE limit prevents memory exhaustion attacks
-- ✅ **100% test coverage** - Extensively tested with property-based tests (142 tests)
+- ✅ **100% test coverage** - Extensively tested with property-based tests
 - ✅ **Type-safe** - Full type hints with strict mypy checking, PEP 561 compliant
-- ✅ **Share versioning** - Backward compatible format with version detection
 - ✅ **Performance optimized** - 15-20% faster with reduced memory footprint
 - ✅ **Python 3.11+** - Modern Python with latest type system features
 - ✅ **Battle-tested** - Based on HashiCorp Vault's proven implementation
@@ -138,7 +137,7 @@ These aliases make function signatures more self-documenting and improve IDE sup
 
 ---
 
-### `split(secret, parts, threshold, rng=None, version=None)`
+### `split(secret, parts, threshold, rng=None)`
 
 Split a secret into cryptographic shares.
 
@@ -148,7 +147,6 @@ Split a secret into cryptographic shares.
 - `parts` (`int`): Total number of shares to create (2-255)
 - `threshold` (`int`): Minimum shares needed to reconstruct (2-255)
 - `rng` (`Random`, optional): Random number generator. Defaults to `SystemRandom()` (cryptographically secure)
-- `version` (`Literal[0, 1]`, optional): Share format version (0=legacy, 1=versioned). Defaults to 1
 
 **Returns:** `Shares` (alias for `list[bytearray]`) - The generated shares
 
@@ -166,20 +164,19 @@ shares: Shares = split(secret, parts=5, threshold=3)
 
 ---
 
-### `combine(parts, version=None)`
+### `combine(parts)`
 
 Reconstruct a secret from shares.
 
 **Parameters:**
 
 - `parts` (`Shares`): List of shares to combine (at least threshold required)
-- `version` (`Literal[0, 1]`, optional): Explicit share version (0=legacy, 1=version 1). If `None`, auto-detects version. Explicit version eliminates the 1/256 false positive rate in auto-detection (100% reliable).
 
 **Returns:** `bytearray` - The reconstructed secret
 
 **Raises:**
 
-- `ValueError` - If fewer than 2 parts provided, parts have mismatched lengths, duplicate parts detected, or mixing different share versions
+- `ValueError` - If fewer than 2 parts provided, parts have mismatched lengths, parts are too short, or duplicate parts detected
 
 **Important:** This function does not validate the threshold. Providing fewer than the required threshold shares will produce an incorrect result without error. Always ensure you provide at least the threshold number of shares used during `split()`.
 
@@ -188,13 +185,8 @@ Reconstruct a secret from shares.
 ```python
 from shamir import Shares, combine
 
-# Auto-detection (works 99.61% of the time for legacy shares)
 selected_shares: Shares = [shares[0], shares[2], shares[4]]
 recovered = combine(selected_shares)
-
-# Explicit version (100% reliable, recommended)
-recovered_v1 = combine(selected_shares, version=1)  # For version 1 shares
-recovered_v0 = combine(legacy_shares, version=0)    # For legacy shares
 
 print(recovered.decode('utf-8'))
 ```
@@ -208,12 +200,8 @@ Horcrux implements Shamir's Secret Sharing over the Galois Field GF(256):
 3. **Secret Recovery**: Use Lagrange interpolation to reconstruct the polynomial from any K shares, then evaluate at x=0 to recover the secret
 4. **Security**: Information-theoretic security means K-1 shares reveal mathematically zero information about the secret
 
-Each share consists of:
-
-- **Version 1 format** (default): `[version_byte, y_values..., x_coordinate]`
-- **Legacy format**: `[y_values..., x_coordinate]`
-
-The library automatically detects and handles both formats for backward compatibility.
+Each share consists of `[y_values..., x_coordinate]`, where the x-coordinate is
+the last byte.
 
 ## Security Properties
 
@@ -310,9 +298,6 @@ A: Shares are already cryptographically secure, but encrypting before cloud stor
 
 **Q: Can I split already-encrypted data?**
 A: Yes. Secret sharing works on any binary data, including encrypted data, password hashes, or random keys.
-
-**Q: What's the difference between version 0 and version 1 shares?**
-A: Version 1 (default) includes a version byte for future compatibility. Version 0 is legacy format. Both are supported, and the library auto-detects which format is used. Use version 1 for new shares.
 
 **Q: Is this the same as multi-sig cryptocurrency wallets?**
 A: Similar concept but different implementation. Multi-sig requires blockchain support. Secret sharing works for any secret (keys, passwords, files) and doesn't require blockchain.
@@ -423,10 +408,9 @@ All contributions must:
 |---------|---------|--------------|----------|
 | Runtime Dependencies | 0 | 6+ | 2+ |
 | Type Hints | Full (PEP 561) | Partial | None |
-| Test Coverage | 100% (142 tests) | ~60% | ~40% |
+| Test Coverage | 100% | ~60% | ~40% |
 | Constant-time Ops | ✅ | ❌ | ❌ |
 | Statistical Timing Tests | ✅ | ❌ | ❌ |
-| Share Versioning | ✅ | ❌ | ❌ |
 | Property Tests | ✅ | ❌ | ❌ |
 | DoS Protection | ✅ | ❌ | ❌ |
 | Security Scanning | ✅ | ⚠️ | ❌ |
@@ -440,6 +424,10 @@ See [Releases](https://github.com/reidhoch/horcrux/releases) for detailed versio
 
 Recent changes:
 
+- **Unreleased**: Removed share format versioning (breaking change)
+  - Shares use a single format: `[y_values..., x_coordinate]` (secret_length + 1 bytes)
+  - Removed the `version` parameter from `split()` and `combine()`
+  - Shares created by v1.1.0–v1.3.0 with the `0x01` version prefix are no longer compatible
 - **v1.3.0**: Enhanced security hardening with statistical validation
   - Added explicit `version` parameter to `combine()` for 100% reliable version detection
   - Improved version detection with majority voting (false positive rate: 1/256 → 1/65536)
