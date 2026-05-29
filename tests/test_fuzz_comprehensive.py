@@ -97,6 +97,9 @@ def test_share_format_consistency(
     x_coords = [share[-1] for share in shares]
     assert len(set(x_coords)) == len(shares), "Duplicate x-coordinates detected"
 
+    # X-coordinates must be in range 1-255 (generated via x_coords[i] + 1)
+    assert all(1 <= x <= 255 for x in x_coords), "X-coordinate out of range 1-255"
+
 
 @given(
     secret=st.binary(min_size=1, max_size=100),
