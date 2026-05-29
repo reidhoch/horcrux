@@ -93,6 +93,11 @@ def combine(parts: Shares) -> bytearray:
     WARNING: This function does not validate the threshold. Ensure you
     provide at least the threshold number of parts used during split().
     Fewer parts will produce an incorrect result without error.
+
+    WARNING: Shares created by versions 1.1.0-1.3.0 used a ``0x01`` version
+    prefix. Those shares are no longer supported: feeding one here treats the
+    prefix as a y-value and silently reconstructs an incorrect secret with no
+    error. Re-split any secrets that were shared under those versions.
     """
     if len(parts) < MIN_PARTS:
         raise ValueError(Error.LESS_THAN_TWO_PARTS)

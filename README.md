@@ -327,7 +327,7 @@ uv run pre-commit install
 ### Running Tests
 
 ```bash
-# Run full test suite (142 tests)
+# Run full test suite
 uv run pytest
 
 # With coverage report
@@ -427,7 +427,7 @@ Recent changes:
 - **Unreleased**: Removed share format versioning (breaking change)
   - Shares use a single format: `[y_values..., x_coordinate]` (secret_length + 1 bytes)
   - Removed the `version` parameter from `split()` and `combine()`
-  - Shares created by v1.1.0–v1.3.0 with the `0x01` version prefix are no longer compatible
+  - Shares created by v1.1.0–v1.3.0 with the `0x01` version prefix are no longer compatible: `combine()` treats the prefix as a y-value and silently reconstructs an incorrect secret with no error, so re-split any affected secrets
 - **v1.3.0**: Enhanced security hardening with statistical validation
   - Added explicit `version` parameter to `combine()` for 100% reliable version detection
   - Improved version detection with majority voting (false positive rate: 1/256 → 1/65536)
