@@ -31,8 +31,8 @@ uv run pytest -n auto                # Run full test suite
 
 **Public Exports** (from `shamir/__init__.py`):
 
-- `split(secret, parts, threshold, rng=None, version=None) -> Shares` - Split secret (max 100MB)
-- `combine(parts: Shares, version=None) -> bytearray` - Reconstruct secret (auto-detects version)
+- `split(secret, parts, threshold, rng=None) -> Shares` - Split secret (max 100MB)
+- `combine(parts: Shares) -> bytearray` - Reconstruct secret
 - `__version__` - Package version string
 
 **Type Aliases**: `Share: TypeAlias = bytearray`, `Shares: TypeAlias = list[Share]`
@@ -53,12 +53,10 @@ uv run pytest -n auto                # Run full test suite
 
 ## Share Format
 
-**Version 1** (current default): `[0x01, y_values..., x_coordinate]` (secret_length + 2 bytes)
-**Version 0** (legacy): `[y_values..., x_coordinate]` (secret_length + 1 bytes)
+`[y_values..., x_coordinate]` (secret_length + 1 bytes)
 
 - X-coordinate stored as 1-255 (last byte of share)
-- Y-values start at index 1 for v1, index 0 for v0
-- `combine()` auto-detects version (99.6% reliable) or pass explicit `version=0|1` (100% reliable)
+- Y-values occupy indices `0 .. secret_length - 1`
 - See `shamir/__init__.py` for usage examples
 
 ## Code Conventions
@@ -67,7 +65,7 @@ uv run pytest -n auto                # Run full test suite
 
 - **Strict typing required**: Complete type hints, `bytearray` for mutable bytes, `bytes` for immutable
 - **No `Any` types**: Use `object` or proper type unions
-- **Literal types**: For constrained values (e.g., `version: Literal[0, 1]`)
+- **Literal types**: For constrained values where applicable
 - Exception: Test files have `disallow_untyped_defs = false` override
 
 ### Error Handling
@@ -124,8 +122,7 @@ This is a **security-focused library**. All code must maintain:
 
 - **X-coordinates**: Stored as 1-255 (not 0-254), generated via `x_coords[i] + 1`
 - **Array indexing**:
-  - Version 1 parts: `secret_length + 2` (version + y-values + x-coordinate)
-  - Version 0 parts: `secret_length + 1` (y-values + x-coordinate)
+  - Part length: `secret_length + 1` (y-values + x-coordinate)
   - X-coordinate is always last byte: `part[-1]`
 
 ## Writing Style

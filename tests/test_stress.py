@@ -16,11 +16,11 @@ class TestStressTesting:
         secret = b"moderate_parts_test" * 10
 
         start = time.time()
-        parts = split(secret, 10, 5, rng=Random(12345), version=1)
+        parts = split(secret, 10, 5, rng=Random(12345))
         split_duration = time.time() - start
 
         start = time.time()
-        reconstructed = combine(parts[:5], version=1)
+        reconstructed = combine(parts[:5])
         combine_duration = time.time() - start
 
         assert reconstructed == secret
@@ -36,8 +36,8 @@ class TestStressTesting:
 
         for i in range(iterations):
             rng = Random(i * 1000)
-            parts = split(secret, 5, 3, rng=rng, version=1)
-            reconstructed = combine(parts[:3], version=1)
+            parts = split(secret, 5, 3, rng=rng)
+            reconstructed = combine(parts[:3])
             assert reconstructed == secret
 
     @pytest.mark.slow
@@ -55,11 +55,11 @@ class TestStressTesting:
             secret = b"memory_test" * 100000  # ~1.1MB
 
             # Split and measure memory
-            parts = split(secret, 5, 3, rng=Random(12345), version=1)
+            parts = split(secret, 5, 3, rng=Random(12345))
             after_split_memory = process.memory_info().rss
 
             # Combine and measure memory
-            reconstructed = combine(parts[:3], version=1)
+            reconstructed = combine(parts[:3])
             after_combine_memory = process.memory_info().rss
 
             assert reconstructed == secret
@@ -84,8 +84,8 @@ class TestStressTesting:
             try:
                 # Use different seeds per worker to avoid collisions
                 rng = Random(worker_id * 10000)
-                parts = split(secret, 5, 3, rng=rng, version=1)
-                reconstructed = combine(parts[:3], version=1)
+                parts = split(secret, 5, 3, rng=rng)
+                reconstructed = combine(parts[:3])
                 results.put((worker_id, reconstructed == secret))
             except Exception as e:
                 errors.put((worker_id, e))
@@ -119,7 +119,7 @@ class TestStressTesting:
             for attempt in range(3):  # Test 3 times per size
                 secret = rng.randbytes(size)
                 parts = split(secret, 5, 3, rng=Random(size * 1000 + attempt))
-                reconstructed = combine(parts[:3], version=1)
+                reconstructed = combine(parts[:3])
                 assert reconstructed == secret
 
     def test_pathological_inputs(self) -> None:
@@ -133,7 +133,7 @@ class TestStressTesting:
 
         for i, pattern in enumerate(patterns):
             parts = split(pattern, 5, 3, rng=Random(i * 50000))
-            reconstructed = combine(parts[:3], version=1)
+            reconstructed = combine(parts[:3])
             assert reconstructed == pattern
 
     def test_safe_threshold_boundary_stress(self) -> None:
@@ -149,15 +149,15 @@ class TestStressTesting:
         ]
 
         for parts_count, threshold in configs:
-            parts = split(secret, parts_count, threshold, rng=Random(12345), version=1)
+            parts = split(secret, parts_count, threshold, rng=Random(12345))
 
             # Test with exactly threshold parts
-            reconstructed = combine(parts[:threshold], version=1)
+            reconstructed = combine(parts[:threshold])
             assert reconstructed == secret
 
             # Test with more than threshold parts
             if parts_count > threshold:
-                reconstructed = combine(parts[: threshold + 1], version=1)
+                reconstructed = combine(parts[: threshold + 1])
                 assert reconstructed == secret
 
     def test_deterministic_behavior_stress(self) -> None:
@@ -167,7 +167,7 @@ class TestStressTesting:
         # Run same operation multiple times
         reference_parts = None
         for _ in range(5):  # Reduced iterations
-            parts = split(secret, 5, 3, rng=Random(98765), version=1)
+            parts = split(secret, 5, 3, rng=Random(98765))
             if reference_parts is None:
                 reference_parts = parts
             else:
@@ -183,7 +183,7 @@ class TestStressTesting:
             secret = f"integrity_test_{i}".encode("utf-8")
 
             parts = split(secret, 5, 3, rng=Random(i * 5000))
-            reconstructed = combine(parts[:3], version=1)
+            reconstructed = combine(parts[:3])
 
             original_secrets.append(secret)
             reconstructed_secrets.append(reconstructed)
@@ -210,11 +210,11 @@ class TestBenchmarks:
             secret = b"X" * size
 
             start = time.time()
-            parts = split(secret, 5, 3, rng=Random(12345), version=1)
+            parts = split(secret, 5, 3, rng=Random(12345))
             split_time = time.time() - start
 
             start = time.time()
-            reconstructed = combine(parts[:3], version=1)
+            reconstructed = combine(parts[:3])
             combine_time = time.time() - start
 
             assert reconstructed == secret

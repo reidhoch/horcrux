@@ -27,9 +27,9 @@ def test_blns() -> None:
                 continue
             decoded_secret: bytes = b64decode(secret)
             out: list[bytearray] = split(
-                decoded_secret, parts, threshold, rng=RNG, version=1
+                decoded_secret, parts, threshold, rng=RNG
             )
             shares: set[bytes] = {bytes(share) for share in out}
             for perm in permutations(shares, threshold):
-                recombined: bytearray = combine(list(perm), version=1)
+                recombined: bytearray = combine(list(perm))
                 assert recombined == decoded_secret
