@@ -22,7 +22,7 @@ dev = [
   "tox-uv>=1.30",
   "vulture>=2.14",
 ]
-examples = ["typer>=0.16,<0.27"]
+examples = ["typer>=0.16,<0.28"]
 
 [project]
 authors = [{ name = "Reid Hochstedler", email = "reidhoch@gmail.com" }]
