@@ -260,11 +260,14 @@ def test_split_basic_functionality():
 Use `@pytest.mark.parametrize` for testing multiple inputs:
 
 ```python
-@pytest.mark.parametrize("parts,threshold", [
-    (3, 2),
-    (5, 3),
-    (7, 4),
-])
+@pytest.mark.parametrize(
+    "parts,threshold",
+    [
+        (3, 2),
+        (5, 3),
+        (7, 4),
+    ],
+)
 def test_split_various_thresholds(parts, threshold):
     secret = b"test"
     result = split(secret, parts, threshold)

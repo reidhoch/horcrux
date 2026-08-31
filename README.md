@@ -106,10 +106,10 @@ from examples.digital_inheritance import setup_inheritance_package
 
 # Package your digital assets
 assets = {
-    'password_manager_master': 'your-master-password',
-    'bitcoin_wallet_seed': '24 word seed phrase...',
-    'recovery_email': 'backup@example.com',
-    'bank_account_info': 'Account details...'
+    "password_manager_master": "your-master-password",
+    "bitcoin_wallet_seed": "24 word seed phrase...",
+    "recovery_email": "backup@example.com",
+    "bank_account_info": "Account details...",
 }
 
 # Create 5 shares distributed to: Spouse, Children, Executor, Lawyer
@@ -188,7 +188,7 @@ from shamir import Shares, combine
 selected_shares: Shares = [shares[0], shares[2], shares[4]]
 recovered = combine(selected_shares)
 
-print(recovered.decode('utf-8'))
+print(recovered.decode("utf-8"))
 ```
 
 ## How It Works
