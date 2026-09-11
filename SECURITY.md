@@ -46,7 +46,7 @@ else:
     result = process_nonzero(secret_byte)
 
 # Good: Constant-time using masking
-is_zero = (secret_byte == 0)
+is_zero = secret_byte == 0
 mask = -int(is_zero)  # -1 if zero, 0 if nonzero
 result = (mask & zero_value) | (~mask & nonzero_value)
 ```
