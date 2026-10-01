@@ -41,7 +41,7 @@ jobs:
         run: |
           uv run pytest --junit-xml=junit/test-results-${{ matrix.python-version }}.xml --cov=shamir --cov-branch --cov-report=xml -n auto -m "not slow and not benchmark"
       - name: Code Coverage
-        uses: codecov/codecov-action@0b35c9ecc4f0529d0eb674914510c22f85b196b4 # v7.1.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           files: coverage.xml
           flags: unittests
