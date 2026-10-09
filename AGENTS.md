@@ -203,7 +203,7 @@ Be brief and to the point. Do not regurgitate information easily gleaned from co
 
 ## CI/CD
 
-- Tests run on Python 3.11, 3.12, 3.13, 3.14 via GitHub Actions
+- Tests run on Python 3.11, 3.12, 3.13, 3.14, 3.15 via GitHub Actions
 - Coverage uploaded to codecov (100% required)
 - Ruff format/lint checks must pass (blocking)
 - Security scanning via CodeQL, Semgrep, Bandit, pip-audit, Scorecards

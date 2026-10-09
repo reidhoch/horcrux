@@ -190,7 +190,7 @@ When optimizing:
 
 ### Continuous Integration
 
-- **Python versions**: Tests run on Python 3.11, 3.12, 3.13, 3.14 via GitHub Actions
+- **Python versions**: Tests run on Python 3.11, 3.12, 3.13, 3.14, 3.15 via GitHub Actions
 - **Coverage**: Uploaded to codecov (100% required)
 - **Formatting**: Ruff format check must pass (blocking)
 - **Linting**: All Ruff lint rules must pass (blocking)
