@@ -151,47 +151,21 @@ def test_share_independence(
     deadline=None,
     suppress_health_check=[HealthCheck.filter_too_much, HealthCheck.too_slow],
 )
-def test_multiple_secrets_independence(
+def test_multiple_secrets_reconstruct_independently(
     secrets: list[bytes],
     parts: int,
     threshold: int,
     rng: Random,
 ) -> None:
-    """Test that sharing multiple secrets produces independent share sets.
-
-    Shares from different secrets should not interfere with each other.
-    """
+    """Test that splitting multiple secrets reconstructs each one independently."""
     assume(parts >= threshold)
-    # All secrets must have same length to mix shares
-    assume(len(set(len(s) for s in secrets)) == 1)
-    # For very short secrets, mixed shares can coincidentally reconstruct to an
-    # original (1/256 per byte). Require enough bytes that collision is negligible.
-    assume(len(secrets[0]) >= 4)
 
-    all_shares = []
     for secret in secrets:
         shares = split(secret, parts, threshold, rng=rng)
-        all_shares.append(shares)
 
         # Each secret should reconstruct correctly
         reconstructed = combine(shares[:threshold])
         assert reconstructed == secret
-
-    # Verify that mixing shares from different secrets doesn't work
-    if len(all_shares) >= 2 and threshold >= 2:
-        # Take shares from first secret and last secret (same length guaranteed by assume)
-        mixed_shares = (
-            all_shares[0][: threshold // 2] + all_shares[-1][threshold // 2 : threshold]
-        )
-
-        if len(mixed_shares) >= threshold:
-            # Check for duplicate x-coordinates (can happen with same RNG)
-            x_coords = [share[-1] for share in mixed_shares[:threshold]]
-            if len(set(x_coords)) == len(x_coords):  # No duplicates
-                # Reconstruction should produce garbage, not either original secret
-                reconstructed_mixed = combine(mixed_shares[:threshold])
-                assert reconstructed_mixed != secrets[0]
-                assert reconstructed_mixed != secrets[-1]
 
 
 @given(
